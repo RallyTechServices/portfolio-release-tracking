@@ -18,6 +18,7 @@ Ext.define("CArABU.technicalservices.portfolioreleasetracking.Board", {
           listeners: {
             load: function(store, records){
                var iterations = this.iterations;
+               console.log('load',iterations);
                _.each(records, function(r){
                  r.calculate(iterations,'PlannedEndDate');
                });

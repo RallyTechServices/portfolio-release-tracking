@@ -103,19 +103,19 @@ Ext.define("CArABU.technicalservices.app.PortfolioReleaseTrackingBoard", {
          types: ['PortfolioItem/Feature'],
          context: this.getContext(),
          columns: columns,
-         iterations: iterations
-         // storeConfig: {
-         //    fetch: ['FormattedID','PlannedEndDate','Name'],
-         //    listeners: {
-         //      load: function(store, records){
-         //         _.each(records, function(r){
-         //           r.calculate(iterations,'PlannedEndDate');
-         //         });
-         //
-         //      },
-         //      scope: this
-         //    }
-         //  }
+         iterations: iterations,
+         storeConfig: {
+            fetch: ['FormattedID','PlannedEndDate','Name'],
+            listeners: {
+              load: function(store, records){
+                 _.each(records, function(r){
+                   r.calculate(iterations,'PlannedEndDate');
+                 });
+
+              },
+              scope: this
+            }
+          }
       });
     },
     _getColumns: function(iterations){
