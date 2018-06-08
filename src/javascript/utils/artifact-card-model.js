@@ -28,8 +28,6 @@ Ext.define('CArABU.technicalservices.ArtifactCardModelBuilder',{
                         var dt = this.get(dateField),
                             db = null;
 
-
-
                         _.each(iterations, function(i){
                            console.log('iteration',i.StartDate, i.EndDate,dt);
                            if ((i.StartDate < dt ) && (i.EndDate >= dt)){

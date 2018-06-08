@@ -8,6 +8,12 @@ Ext.define("CArABU.technicalservices.app.PortfolioReleaseTrackingBoard", {
         name : "CArABU.technicalservices.app.TSPortfolioReleaseTrackingBoard"
     },
 
+    config: {
+       defaultSettings: {
+         usePoints: true
+       }
+    },
+
     launch: function() {
 
         if (!this._validate()){
@@ -95,17 +101,20 @@ Ext.define("CArABU.technicalservices.app.PortfolioReleaseTrackingBoard", {
     },
     _buildBoard: function(iterations){
       this.logger.log('_buildBoard',iterations);
-
-      var columns = this._getColumns(iterations);
+      if (iterations){
+         this.iterations = iterations;
+      }
 
       this.add({
          xtype: 'portfolioreleasetrackingboard',
          types: ['PortfolioItem/Feature'],
          context: this.getContext(),
-         columns: columns,
-         iterations: iterations,
+         iterations: this.iterations,
+         cardConfig: {
+            usePoints: this.getUsePoints()
+         },
          storeConfig: {
-            fetch: ['FormattedID','PlannedEndDate','Name'],
+            fetch: this._getFetchList(),
             listeners: {
               load: function(store, records){
                  _.each(records, function(r){
@@ -118,52 +127,15 @@ Ext.define("CArABU.technicalservices.app.PortfolioReleaseTrackingBoard", {
           }
       });
     },
-    _getColumns: function(iterations){
-      var columns = [];
-
-        _.each(iterations, function(i) {
-            var endDate = i.EndDate || i.get('EndDate'),
-                startDate = i.StartDate || i.get('StartDate');
-
-            columns.push({
-                value: endDate,
-                additionalFetchFields: ['PlannedEndDate'],
-                columnHeaderConfig: {
-                    headerData: i
-                },
-                getStoreFilter: function(model){
-                  return [{
-                     property: "PlannedEndDate",
-                     operator: '<=',
-                     value: endDate
-                 },{
-                   property: "PlannedEndDate",
-                   operator: '>',
-                   value: startDate
-                 }];
-                }
-            });
-        });
-
-        columns.push({
-          value: null,
-          columnHeaderConfig: {
-              headerData: {Name: 'Unscheduled'}
-          },
-          additionalFetchFields: ['PlannedEndDate'],
-
-          getStoreFilter: function(model){
-            return {
-               property: "PlannedEndDate",
-               operator: '=',
-               value: null
-           };
-          }
-        });
-
-        return columns;
+    _getFetchList: function(){
+      if (this.getUsePoints()){
+         ['PlannedEndDate','LeafStoryPlanEstimateTotal','AcceptedLeafStoryPlanEstimateTotal']
+      }
+      return ['PlannedEndDate','LeafStoryCount','AcceptedLeafStoryCount'];
     },
-
+    getUsePoints: function(){
+       return this.getSetting('usePoints') == "true" || this.getSetting('usePoints') === true;
+    },
     getSettingsFields: function() {
         var check_box_margins = '5 0 5 0';
         return [{
@@ -173,6 +145,14 @@ Ext.define("CArABU.technicalservices.app.PortfolioReleaseTrackingBoard", {
             fieldLabel: '',
             margin: check_box_margins,
             boxLabel: 'Save Logging<br/><span style="color:#999999;"><i>Save last 100 lines of log for debugging.</i></span>'
+        },{
+          name: 'usePoints',
+          xtype: 'rallycheckboxfield',
+          boxLabelAlign: 'after',
+          fieldLabel: '',
+          margin: check_box_margins,
+          boxLabel: 'Show Leaf Story Points (uncheck to show leaf story count)'
+
         }];
     },
 
