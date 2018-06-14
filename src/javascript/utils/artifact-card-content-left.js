@@ -35,9 +35,19 @@ Ext.define('CArABU.technicalservices.plugin.TrackingCardContentLeft', {
                  data.idWidth = 20 + (formattedId.length * 8);
                  data.formattedId = Rally.ui.cardboard.plugin.CardContentLeft.getIdTpl().apply(record.data);
                  if (this.card.usePoints){
-                   data.summary = Ext.String.format("{0} / {1}", record.get('AcceptedLeafStoryPlanEstimateTotal'), record.get('LeafStoryPlanEstimateTotal'));
+                   if (record.get('LeafStoryPlanEstimateTotal') >= 0){
+                     data.summary = Ext.String.format("{0} / {1}", record.get('AcceptedLeafStoryPlanEstimateTotal'), record.get('LeafStoryPlanEstimateTotal'));
+                   } else {
+                      data.summary = Ext.String.format("{0} Points", record.get('PlanEstimate') || 0);
+                   }
+
                  } else {
-                   data.summary = Ext.String.format("{0} / {1}", record.get('AcceptedLeafStoryCount'), record.get('LeafStoryCount'));
+                   if (record.get('LeafStoryCount') >= 0){
+                     data.summary = Ext.String.format("{0} / {1}", record.get('AcceptedLeafStoryCount'), record.get('LeafStoryCount'));
+                   } else {
+                     data.summary = "";
+                   }
+
                  }
 
                  return this.self.getHeaderTpl().apply(data);

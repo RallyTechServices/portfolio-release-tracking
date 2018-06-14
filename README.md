@@ -15,6 +15,10 @@ An alternate release tracking board with the following differences from the Port
 *  Board is read only and cards cannot be dragged across projects or iterations
 *  Dependences....TODO
 
+Dataset for this app is the following:
+* All Features associated explicitly with the currently selected release.  This association is determined by comparing the Release Name only (not Name + ReleaseStartDate + ReleaseEndDate);
+* Any orphaned Stories or Defects explicitly associated with the currently selected release. Note that this behavior is different from the current release tracking board in that it does not show Stories or Defects associated with iterations within the Release timebox.
+
 ## Development Notes
 
 

@@ -35,3 +35,9 @@
   padding: 3px;
   line-height: 15px;
 }
+
+.dependencycomponent {
+  position: absolute;
+  x: 0;
+  y:0;
+}

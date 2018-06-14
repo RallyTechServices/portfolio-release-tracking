@@ -4,10 +4,13 @@
 
    constructor: function(config){
       this.mergeConfig(config);
+      this.hidden = this.record.get('__isHidden') || false;
       this.callParent(arguments);
    },
 
    setupPlugins: function () {
+
+
       var plugins = [
           {ptype: 'rallycardpopover'},
           {ptype: 'trackingcardcontentleft'}

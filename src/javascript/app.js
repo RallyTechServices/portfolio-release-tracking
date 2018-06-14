@@ -14,6 +14,8 @@ Ext.define("CArABU.technicalservices.app.PortfolioReleaseTrackingBoard", {
        }
     },
 
+    featureModel: "PortfolioItem/Feature",
+
     launch: function() {
 
         if (!this._validate()){
@@ -23,7 +25,7 @@ Ext.define("CArABU.technicalservices.app.PortfolioReleaseTrackingBoard", {
         var release = this.getContext().getTimeboxScope().getRecord();
 
         this._fetchIterations(release).then({
-           success: this._buildBoard,
+           success: this._initializeApp,
            failure: this._showErrorNotification,
            scope: this
         });
@@ -39,14 +41,14 @@ Ext.define("CArABU.technicalservices.app.PortfolioReleaseTrackingBoard", {
             this._addAppMessage("Please select a Release from the dashboard scope.");
             return false;
         }
+
         return true;
     },
+
     _fetchIterations: function(release){
         var deferred = Ext.create('Deft.Deferred');
 
-        if (!release){
-           deferred.reject('No Release selected.');
-        } else {
+
           Ext.create('Rally.data.wsapi.Store',{
              model: 'Iteration',
              fetch: ['Name','StartDate','EndDate'],
@@ -83,8 +85,12 @@ Ext.define("CArABU.technicalservices.app.PortfolioReleaseTrackingBoard", {
                   }
               }
           });
-        }
+
         return deferred.promise;
+    },
+
+    getPortfolioItemName: function(){
+       return this.featureModel && this.featureModel.split('/').length > 1 && this.featureModel.split('/')[1];
     },
     _showErrorNotification: function(message){
        Rally.ui.notify.Notifier.showError({
@@ -99,39 +105,127 @@ Ext.define("CArABU.technicalservices.app.PortfolioReleaseTrackingBoard", {
            html: Ext.String.format('<div class="no-data-container"><div class="secondary-message">{0}</div></div>',message)
         });
     },
+    toggleDependencies: function(show){
+
+      if (!show){
+         this.down('#dependencies') && this.down('#dependencies').destroy();
+         return;
+      }
+
+      var drawComponent = Ext.create('Ext.draw.Component', {
+          style: 'position:absolute; top:0px; left:0px;',
+          itemId: 'dependencies',
+          viewBox: false,
+          cls: 'dependencycomponent',
+          items: [{
+            type: "path",
+            path: "M310 10 C 320 20, 340 20, 350 10",
+            fill: "transparent",
+            stroke: "red",
+            "stroke-width": "3"
+          }]
+      });
+
+        this.add(drawComponent);
+    },
+    _initializeApp: function(iterations){
+      this._addToggles();
+      this._buildBoard(iterations);
+    },
     _buildBoard: function(iterations){
       this.logger.log('_buildBoard',iterations);
+
+      var board = this.down('#trackingbboard');
+      if (board){
+        board.destroy();
+      }
       if (iterations){
          this.iterations = iterations;
       }
 
+
       this.add({
          xtype: 'portfolioreleasetrackingboard',
-         types: ['PortfolioItem/Feature'],
-         context: this.getContext(),
+         itemId: 'trackingbboard',
+         usePoints: this.getUsePoints(),
+         showStories: this.getShowStories(),
+         showDefects: this.getShowDefects(),
+         showDependencies: this.getShowDependencies(),
+         release: this.getContext().getTimeboxScope().getRecord().getData(),
          iterations: this.iterations,
+         featureName: this.getPortfolioItemName(),
+         context: this.getContext(),
          cardConfig: {
             usePoints: this.getUsePoints()
-         },
-         storeConfig: {
-            fetch: this._getFetchList(),
-            listeners: {
-              load: function(store, records){
-                 _.each(records, function(r){
-                   r.calculate(iterations,'PlannedEndDate');
-                 });
-
-              },
-              scope: this
-            }
-          }
+         }
       });
+
     },
-    _getFetchList: function(){
-      if (this.getUsePoints()){
-         ['PlannedEndDate','LeafStoryPlanEstimateTotal','AcceptedLeafStoryPlanEstimateTotal']
-      }
-      return ['PlannedEndDate','LeafStoryCount','AcceptedLeafStoryCount'];
+    _addToggles: function(){
+        this.add({
+          xtype: 'container',
+          layout: 'hbox',
+          margin: 5,
+          items: [{
+            xtype: 'button',
+            iconCls: 'icon-story',
+            itemId: 'showStories',
+            cls: 'secondary rly-small',
+            margin: 5,
+            enableToggle: true,
+            toggleHandler: this._toggleOptions,
+            scope: this
+          },{
+            xtype: 'button',
+            iconCls: 'icon-defect',
+            itemId: 'showDefects',
+            cls: 'secondary rly-small',
+            margin: 5,
+            enableToggle: true,
+            toggleHandler: this._toggleOptions,
+            scope: this
+          },{
+            xtype: 'button',
+            iconCls: 'icon-predecessor',
+            itemId: 'showDependencies',
+            cls: 'secondary rly-small',
+            margin: 5,
+            enableToggle: true,
+            toggleHandler: this._toggleOptions,
+            scope: this
+          }]
+        });
+    },
+    _toggleOptions: function(btn, pressed){
+        this.logger.log('_toggleOptions', btn.cls, btn.iconCls);
+
+        if (pressed){
+          btn.removeCls('secondary');
+          btn.addCls('primary');
+        } else {
+          btn.removeCls('primary');
+          btn.addCls('secondary');
+        }
+
+        switch(btn.itemId){
+           case "showDependencies":
+             this.toggleDependencies(pressed);
+             break;
+           case "showDefects":
+            break;
+           case "showStories":
+              break;
+        }
+        this._buildBoard();
+    },
+    getShowStories: function(){
+      return this.down('#showStories').pressed;
+    },
+    getShowDefects: function(){
+      return this.down('#showDefects').pressed;
+    },
+    getShowDependencies: function(){
+      return this.down('#showDependencies').pressed;
     },
     getUsePoints: function(){
        return this.getSetting('usePoints') == "true" || this.getSetting('usePoints') === true;
