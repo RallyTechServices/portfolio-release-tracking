@@ -8,6 +8,14 @@ Ext.define("CArABU.technicalservices.app.PortfolioReleaseTrackingBoard", {
         name : "CArABU.technicalservices.app.TSPortfolioReleaseTrackingBoard"
     },
 
+    config: {
+       defaultSettings: {
+         usePoints: true
+       }
+    },
+
+    featureModel: "PortfolioItem/Feature",
+
     launch: function() {
 
         if (!this._validate()){
@@ -17,7 +25,7 @@ Ext.define("CArABU.technicalservices.app.PortfolioReleaseTrackingBoard", {
         var release = this.getContext().getTimeboxScope().getRecord();
 
         this._fetchIterations(release).then({
-           success: this._buildBoard,
+           success: this._initializeApp,
            failure: this._showErrorNotification,
            scope: this
         });
@@ -33,14 +41,14 @@ Ext.define("CArABU.technicalservices.app.PortfolioReleaseTrackingBoard", {
             this._addAppMessage("Please select a Release from the dashboard scope.");
             return false;
         }
+
         return true;
     },
+
     _fetchIterations: function(release){
         var deferred = Ext.create('Deft.Deferred');
 
-        if (!release){
-           deferred.reject('No Release selected.');
-        } else {
+
           Ext.create('Rally.data.wsapi.Store',{
              model: 'Iteration',
              fetch: ['Name','StartDate','EndDate'],
@@ -77,8 +85,12 @@ Ext.define("CArABU.technicalservices.app.PortfolioReleaseTrackingBoard", {
                   }
               }
           });
-        }
+
         return deferred.promise;
+    },
+
+    getPortfolioItemName: function(){
+       return this.featureModel && this.featureModel.split('/').length > 1 && this.featureModel.split('/')[1];
     },
     _showErrorNotification: function(message){
        Rally.ui.notify.Notifier.showError({
@@ -93,77 +105,213 @@ Ext.define("CArABU.technicalservices.app.PortfolioReleaseTrackingBoard", {
            html: Ext.String.format('<div class="no-data-container"><div class="secondary-message">{0}</div></div>',message)
         });
     },
+    toggleDependencies: function(board){
+      console.log('toggleDependencies',board);
+      if (!board){
+         this.down('#dependencies') && this.down('#dependencies').destroy();
+         return;
+      }
+
+    //  var board = this.down('portfolioreleasetrackingboard');
+      console.log('before',  board.getCards());
+      var coords = {};
+      _.each(board.getCards(), function(cs){
+          _.each(cs, function(c){
+             var dep = c.getRecord().get('__dependency');
+             if (dep){
+                 if (!coords[dep]){
+                     coords[dep] = { x: null,
+                                     y: null,
+                                     deps: []
+                                   };
+                 }
+                 coords[dep].deps.push({
+                   x: c.getX(),
+                   y: c.getY()
+                 });
+             } else if (!c.getRecord().get('__hidden')){
+                 var fid = c.getRecord().get('FormattedID');
+                 if (!coords[fid]){
+                    coords[fid] = { x: null,
+                                    y: null,
+                                    deps: []
+                                  };
+
+                 }
+                 coords[fid].x = c.getX();
+                 coords[fid].y = c.getY();
+             }
+          });
+          //coords.push({x: c.getX(), y: c.getY()});
+      });
+      console.log('after');
+
+      var items = [];
+
+      _.each(coords, function(c){
+          if (c.x && c.y && c.deps.length > 0){
+              _.each(c.deps, function(d){
+                  items.push({
+                    type: "path",
+                    path: Ext.String.format("M{0} {1} L {2} {3}",c.x,c.y,d.x,d.y),
+                    fill: "transparent",
+                    stroke: "blue",
+                    "stroke-width": "1"
+                  });
+              });
+          }
+      });
+
+      var drawComponent = Ext.create('Ext.draw.Component', {
+          style: Ext.String.format('position:absolute; top:{0}px; left:{1}px;z-index:auto',board.getX(), board.getY()),
+          itemId: 'dependencies',
+          viewBox: false,
+          //cls: 'dependencycomponent',
+          height: board.getHeight(),
+          width: board.getWidth(),
+          items: items
+          // items: [{
+          //   type: "path",
+          //   path: "M310 50 C 320 20, 340 60, 350 10",
+          //   fill: "transparent",
+          //   stroke: "red",
+          //   "stroke-width": "10"
+          // }]
+      });
+      this.add(drawComponent);
+
+        // drawComponent.surface.add({
+        //   type: "path",
+        //   path: "M310 10 C 320 20, 340 20, 350 10",
+        //   fill: "transparent",
+        //   stroke: "red",
+        //   "stroke-width": "10",
+        //
+        // });
+        //
+        // drawComponent.surface.add({
+        //     type: 'circle',
+        //     fill: '#79BB3F',
+        //     radius: 100,
+        //     x: 100,
+        //     y: 100
+        // });
+
+    },
+    _initializeApp: function(iterations){
+      this._addToggles();
+        this._buildBoard(iterations);
+    },
     _buildBoard: function(iterations){
       this.logger.log('_buildBoard',iterations);
 
-      var columns = this._getColumns(iterations);
+      this.toggleDependencies(false);
 
-      this.add({
+      var board = this.down('#trackingbboard');
+      if (board){
+        board.destroy();
+      }
+      if (iterations){
+         this.iterations = iterations;
+      }
+
+      var b = this.add({
          xtype: 'portfolioreleasetrackingboard',
-         types: ['PortfolioItem/Feature'],
+         itemId: 'trackingbboard',
+         usePoints: this.getUsePoints(),
+         showStories: this.getShowStories(),
+         showDefects: this.getShowDefects(),
+         showDependencies: this.getShowDependencies(),
+         release: this.getContext().getTimeboxScope().getRecord().getData(),
+         iterations: this.iterations,
+         featureName: this.getPortfolioItemName(),
          context: this.getContext(),
-         columns: columns,
-         iterations: iterations,
-         storeConfig: {
-            fetch: ['FormattedID','PlannedEndDate','Name'],
-            listeners: {
-              load: function(store, records){
-                 _.each(records, function(r){
-                   r.calculate(iterations,'PlannedEndDate');
-                 });
-
-              },
-              scope: this
-            }
-          }
+         cardConfig: {
+            usePoints: this.getUsePoints()
+         }
       });
+
+      if (this.getShowDependencies()){
+         b.on('load', this.toggleDependencies, this);
+      }
     },
-    _getColumns: function(iterations){
-      var columns = [];
-
-        _.each(iterations, function(i) {
-            var endDate = i.EndDate || i.get('EndDate'),
-                startDate = i.StartDate || i.get('StartDate');
-
-            columns.push({
-                value: endDate,
-                additionalFetchFields: ['PlannedEndDate'],
-                columnHeaderConfig: {
-                    headerData: i
-                },
-                getStoreFilter: function(model){
-                  return [{
-                     property: "PlannedEndDate",
-                     operator: '<=',
-                     value: endDate
-                 },{
-                   property: "PlannedEndDate",
-                   operator: '>',
-                   value: startDate
-                 }];
-                }
-            });
+    _addToggles: function(){
+        this.add({
+          xtype: 'container',
+          layout: 'hbox',
+          margin: 5,
+          items: [{
+            xtype: 'button',
+            iconCls: 'icon-story',
+            itemId: 'showStories',
+            cls: 'primary rly-small',
+            margin: 5,
+            pressed: true,
+            enableToggle: true,
+            toggleHandler: this._toggleOptions,
+            scope: this
+          },{
+            xtype: 'button',
+            iconCls: 'icon-defect',
+            itemId: 'showDefects',
+            cls: 'primary rly-small',
+            margin: 5,
+            pressed: true,
+            enableToggle: true,
+            toggleHandler: this._toggleOptions,
+            scope: this
+          },{
+            xtype: 'button',
+            iconCls: 'icon-predecessor',
+            itemId: 'showDependencies',
+            cls: 'primary rly-small',
+            margin: 5,
+            pressed: true,
+            enableToggle: true,
+            toggleHandler: this._toggleOptions,
+            scope: this
+          // },{
+          //   xtype: 'button',
+          //   iconCls: 'icon-story icon-predecessor',
+          //   itemId: 'showStoryDependencies',
+          //   cls: 'primary rly-small',
+          //   margin: 5,
+          //   pressed: true,
+          //   enableToggle: true,
+          //   toggleHandler: this._toggleOptions,
+          //   scope: this
+          }]
         });
-
-        columns.push({
-          value: null,
-          columnHeaderConfig: {
-              headerData: {Name: 'Unscheduled'}
-          },
-          additionalFetchFields: ['PlannedEndDate'],
-
-          getStoreFilter: function(model){
-            return {
-               property: "PlannedEndDate",
-               operator: '=',
-               value: null
-           };
-          }
-        });
-
-        return columns;
     },
+    _toggleOptions: function(btn, pressed){
+        this.logger.log('_toggleOptions', btn.cls, btn.iconCls);
 
+        if (pressed){
+          btn.removeCls('secondary');
+          btn.addCls('primary');
+        } else {
+          btn.removeCls('primary');
+          btn.addCls('secondary');
+        }
+
+        this._buildBoard();
+        if (btn.itemId == "showDependencies"){
+           this.toggleDependencies(pressed);
+        }
+
+    },
+    getShowStories: function(){
+      return this.down('#showStories').pressed;
+    },
+    getShowDefects: function(){
+      return this.down('#showDefects').pressed;
+    },
+    getShowDependencies: function(){
+      return this.down('#showDependencies').pressed;
+    },
+    getUsePoints: function(){
+       return this.getSetting('usePoints') == "true" || this.getSetting('usePoints') === true;
+    },
     getSettingsFields: function() {
         var check_box_margins = '5 0 5 0';
         return [{
@@ -173,6 +321,14 @@ Ext.define("CArABU.technicalservices.app.PortfolioReleaseTrackingBoard", {
             fieldLabel: '',
             margin: check_box_margins,
             boxLabel: 'Save Logging<br/><span style="color:#999999;"><i>Save last 100 lines of log for debugging.</i></span>'
+        },{
+          name: 'usePoints',
+          xtype: 'rallycheckboxfield',
+          boxLabelAlign: 'after',
+          fieldLabel: '',
+          margin: check_box_margins,
+          boxLabel: 'Show Leaf Story Points (uncheck to show leaf story count)'
+
         }];
     },
 

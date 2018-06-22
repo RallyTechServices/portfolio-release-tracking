@@ -25,3 +25,36 @@
   display: block;
 
 }
+
+.story-summary {
+  font-size: 12px;
+  font-weight: bold;
+  color: #666;
+  font-family: NotoSans;
+  display: block;
+  padding: 3px;
+  line-height: 15px;
+  cursor: pointer;
+  background-color: white;
+}
+
+.dependency {
+  font-size: 12px;
+  font-weight: bold;
+  color: #666;
+  font-family: NotoSans;
+  display: block;
+  padding: 3px;
+  line-height: 15px;
+  cursor: pointer;
+  background-color: white;
+}
+
+.dependencycomponent {
+  position: absolute;
+  x:0;
+  y:0;
+  left: 0px;
+  top: 0px;
+  z-index: inherit;
+}
