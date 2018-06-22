@@ -105,35 +105,107 @@ Ext.define("CArABU.technicalservices.app.PortfolioReleaseTrackingBoard", {
            html: Ext.String.format('<div class="no-data-container"><div class="secondary-message">{0}</div></div>',message)
         });
     },
-    toggleDependencies: function(show){
-
-      if (!show){
+    toggleDependencies: function(board){
+      console.log('toggleDependencies',board);
+      if (!board){
          this.down('#dependencies') && this.down('#dependencies').destroy();
          return;
       }
 
-      var drawComponent = Ext.create('Ext.draw.Component', {
-          style: 'position:absolute; top:0px; left:0px;',
-          itemId: 'dependencies',
-          viewBox: false,
-          cls: 'dependencycomponent',
-          items: [{
-            type: "path",
-            path: "M310 10 C 320 20, 340 20, 350 10",
-            fill: "transparent",
-            stroke: "red",
-            "stroke-width": "3"
-          }]
+    //  var board = this.down('portfolioreleasetrackingboard');
+      console.log('before',  board.getCards());
+      var coords = {};
+      _.each(board.getCards(), function(cs){
+          _.each(cs, function(c){
+             var dep = c.getRecord().get('__dependency');
+             if (dep){
+                 if (!coords[dep]){
+                     coords[dep] = { x: null,
+                                     y: null,
+                                     deps: []
+                                   };
+                 }
+                 coords[dep].deps.push({
+                   x: c.getX(),
+                   y: c.getY()
+                 });
+             } else if (!c.getRecord().get('__hidden')){
+                 var fid = c.getRecord().get('FormattedID');
+                 if (!coords[fid]){
+                    coords[fid] = { x: null,
+                                    y: null,
+                                    deps: []
+                                  };
+
+                 }
+                 coords[fid].x = c.getX();
+                 coords[fid].y = c.getY();
+             }
+          });
+          //coords.push({x: c.getX(), y: c.getY()});
+      });
+      console.log('after');
+
+      var items = [];
+
+      _.each(coords, function(c){
+          if (c.x && c.y && c.deps.length > 0){
+              _.each(c.deps, function(d){
+                  items.push({
+                    type: "path",
+                    path: Ext.String.format("M{0} {1} L {2} {3}",c.x,c.y,d.x,d.y),
+                    fill: "transparent",
+                    stroke: "blue",
+                    "stroke-width": "1"
+                  });
+              });
+          }
       });
 
-        this.add(drawComponent);
+      var drawComponent = Ext.create('Ext.draw.Component', {
+          style: Ext.String.format('position:absolute; top:{0}px; left:{1}px;z-index:auto',board.getX(), board.getY()),
+          itemId: 'dependencies',
+          viewBox: false,
+          //cls: 'dependencycomponent',
+          height: board.getHeight(),
+          width: board.getWidth(),
+          items: items
+          // items: [{
+          //   type: "path",
+          //   path: "M310 50 C 320 20, 340 60, 350 10",
+          //   fill: "transparent",
+          //   stroke: "red",
+          //   "stroke-width": "10"
+          // }]
+      });
+      this.add(drawComponent);
+
+        // drawComponent.surface.add({
+        //   type: "path",
+        //   path: "M310 10 C 320 20, 340 20, 350 10",
+        //   fill: "transparent",
+        //   stroke: "red",
+        //   "stroke-width": "10",
+        //
+        // });
+        //
+        // drawComponent.surface.add({
+        //     type: 'circle',
+        //     fill: '#79BB3F',
+        //     radius: 100,
+        //     x: 100,
+        //     y: 100
+        // });
+
     },
     _initializeApp: function(iterations){
       this._addToggles();
-      this._buildBoard(iterations);
+        this._buildBoard(iterations);
     },
     _buildBoard: function(iterations){
       this.logger.log('_buildBoard',iterations);
+
+      this.toggleDependencies(false);
 
       var board = this.down('#trackingbboard');
       if (board){
@@ -143,8 +215,7 @@ Ext.define("CArABU.technicalservices.app.PortfolioReleaseTrackingBoard", {
          this.iterations = iterations;
       }
 
-
-      this.add({
+      var b = this.add({
          xtype: 'portfolioreleasetrackingboard',
          itemId: 'trackingbboard',
          usePoints: this.getUsePoints(),
@@ -160,6 +231,9 @@ Ext.define("CArABU.technicalservices.app.PortfolioReleaseTrackingBoard", {
          }
       });
 
+      if (this.getShowDependencies()){
+         b.on('load', this.toggleDependencies, this);
+      }
     },
     _addToggles: function(){
         this.add({
@@ -170,8 +244,9 @@ Ext.define("CArABU.technicalservices.app.PortfolioReleaseTrackingBoard", {
             xtype: 'button',
             iconCls: 'icon-story',
             itemId: 'showStories',
-            cls: 'secondary rly-small',
+            cls: 'primary rly-small',
             margin: 5,
+            pressed: true,
             enableToggle: true,
             toggleHandler: this._toggleOptions,
             scope: this
@@ -179,8 +254,9 @@ Ext.define("CArABU.technicalservices.app.PortfolioReleaseTrackingBoard", {
             xtype: 'button',
             iconCls: 'icon-defect',
             itemId: 'showDefects',
-            cls: 'secondary rly-small',
+            cls: 'primary rly-small',
             margin: 5,
+            pressed: true,
             enableToggle: true,
             toggleHandler: this._toggleOptions,
             scope: this
@@ -188,11 +264,22 @@ Ext.define("CArABU.technicalservices.app.PortfolioReleaseTrackingBoard", {
             xtype: 'button',
             iconCls: 'icon-predecessor',
             itemId: 'showDependencies',
-            cls: 'secondary rly-small',
+            cls: 'primary rly-small',
             margin: 5,
+            pressed: true,
             enableToggle: true,
             toggleHandler: this._toggleOptions,
             scope: this
+          // },{
+          //   xtype: 'button',
+          //   iconCls: 'icon-story icon-predecessor',
+          //   itemId: 'showStoryDependencies',
+          //   cls: 'primary rly-small',
+          //   margin: 5,
+          //   pressed: true,
+          //   enableToggle: true,
+          //   toggleHandler: this._toggleOptions,
+          //   scope: this
           }]
         });
     },
@@ -207,16 +294,11 @@ Ext.define("CArABU.technicalservices.app.PortfolioReleaseTrackingBoard", {
           btn.addCls('secondary');
         }
 
-        switch(btn.itemId){
-           case "showDependencies":
-             this.toggleDependencies(pressed);
-             break;
-           case "showDefects":
-            break;
-           case "showStories":
-              break;
-        }
         this._buildBoard();
+        if (btn.itemId == "showDependencies"){
+           this.toggleDependencies(pressed);
+        }
+
     },
     getShowStories: function(){
       return this.down('#showStories').pressed;

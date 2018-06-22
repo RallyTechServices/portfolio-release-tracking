@@ -10,6 +10,11 @@ Ext.define("CArABU.technicalservices.portfolioreleasetracking.Board", {
       showDefects: true,
       showDependencies: true,
       iterations: null,
+      toFrontOnShow: false,
+      style: {
+
+        "z-index":0
+      },
 
       readOnly: true,
       attribute: '__dateBucket',
@@ -23,16 +28,60 @@ Ext.define("CArABU.technicalservices.portfolioreleasetracking.Board", {
        },
        cardConfig: {
           xtype: 'trackingcard'
-      }
+      },
+      storeConfig: {
+          listeners: {
+            load: function(store, records){
+                  console.log('store',records,this);
+                  var projectOrphans = {};
+
+                  _.each(records, function(r){
+                      var proj = r.get('Project').ObjectID;
+
+                      if (r.get('Feature') && r.get('Feature').Project.ObjectID == proj){
+                          r.set('__hidden',true);
+                      }
+
+                      if (r.get('__isOrphan')){
+
+                         if (!projectOrphans[proj]){
+
+                            projectOrphans[proj] = r;
+                            r.set('__totalCount', 0);
+                            r.set('__acceptedCount', 0);
+                            r.set('__totalPoints', 0);
+                            r.set('__acceptedPoints', 0);
+                            r.set('__hidden',false);
+
+                         } else {
+                             r.set('__hidden',true);
+                         }
+
+                         var isAccepted = r.get('AcceptedDate');
+
+                         projectOrphans[proj].set('__totalCount', projectOrphans[proj].get('__totalCount') + 1);
+                         projectOrphans[proj].set('__totalPoints', projectOrphans[proj].get('__totalPoints') + r.get('PlanEstimate'));
+                         if (isAccepted){
+                           projectOrphans[proj].set('__acceptedCount', projectOrphans[proj].get('__acceptedCount') + 1);
+                           projectOrphans[proj].set('__acceptedPoints', projectOrphans[proj].get('__acceptedPoints') + r.get('PlanEstimate'));
+                         }
+                      }
+                  });
+              }
+          }
+        }
     },
 
     dependencies: null,
 
-
     constructor: function(config){
       config.columns = this._getColumns(config);
+      // config.renderTpl =  [
+      //   '<svg width="200" height="250" version="1.1" xmlns="http://www.w3.org/2000/svg" style="z-index:auto;position:absolute;top:0px;left:0px;"><line x1="10" y1="10" x2="300" y2="300" fill="none" stroke="blue" stroke-width="5" style="z-index:auto;"></svg>'
+      // ]
       this.mergeConfig(config);
       this.callParent(arguments);
+
     },
 
     _getColumns: function(config){
@@ -81,16 +130,16 @@ Ext.define("CArABU.technicalservices.portfolioreleasetracking.Board", {
                   if (model.isUserStory() && (showDependencies || showStories)){
                     var filters = null;
 
-                    if (showDependencies){
+                    if (showDependencies || showStories){
                         var query = Ext.String.format("(({0}.Release.Name = \"{1}\") AND (DirectChildrenCount = 0))",featureName, release.Name);
                         filters = Rally.data.wsapi.Filter.fromQueryString(query);
                     }
                     if (showStories){ //This means we want to see orphaned stories (not associated with a feature)
-                      var query = Ext.String.format("(Release.Name = \"{0}\")", release.Name);
+                      var query = Ext.String.format("((Release.Name = \"{0}\") AND ({1} = \"\"))", release.Name, featureName);
                       if (!filters){
                           filters = Rally.data.wsapi.Filter.fromQueryString(query);
                       } else {
-                         filters = Rally.data.wsapi.Filter.or(filters);
+                         filters = filters.or(Rally.data.wsapi.Filter.fromQueryString(query));
                       }
                     }
 
@@ -113,6 +162,8 @@ Ext.define("CArABU.technicalservices.portfolioreleasetracking.Board", {
                            value: i.Name
                          }];
                     }
+
+
                 }
             });
         });
@@ -141,19 +192,18 @@ Ext.define("CArABU.technicalservices.portfolioreleasetracking.Board", {
               if (model.isUserStory() && (showDependencies || showStories)){
                   var filters = null;
 
-                  if (showDependencies){
+                  if (showDependencies || showStories){
                       var query = Ext.String.format("(({0}.Release.Name = \"{1}\") AND (DirectChildrenCount = 0))",featureName, release.Name);
                       filters = Rally.data.wsapi.Filter.fromQueryString(query);
                   }
                   if (showStories){ //This means we want to see orphaned stories (not associated with a feature)
-                    var query = Ext.String.format("(Release.Name = \"{0}\")", release.Name);
+                    var query = Ext.String.format("((Release.Name = \"{0}\") AND ({1} = \"\"))", release.Name, featureName);
                     if (!filters){
                         filters = Rally.data.wsapi.Filter.fromQueryString(query);
                     } else {
-                       filters = Rally.data.wsapi.Filter.or(filters);
+                       filters = filters.or(Rally.data.wsapi.Filter.fromQueryString(query));
                     }
                   }
-
                   return filters.and({
                      property: 'Iteration',
                      value: ""
@@ -193,7 +243,7 @@ Ext.define("CArABU.technicalservices.portfolioreleasetracking.Board", {
           fields.push(featureName);
       }
       if (showDependencies || showStories || showDefects){
-          fields = fields.concat('PlanEstimate','Iteration','EndDate');
+          fields = fields.concat('PlanEstimate','Iteration','EndDate','AcceptedDate');
       }
       return fields;
     },
@@ -205,7 +255,7 @@ Ext.define("CArABU.technicalservices.portfolioreleasetracking.Board", {
         if (this.showDefects){
            types.push('Defect');
         }
-
+        console.log('retrieve models')
         Rally.data.ModelFactory.getModels({
             types: types,
             context: this.context,
@@ -225,8 +275,12 @@ Ext.define("CArABU.technicalservices.portfolioreleasetracking.Board", {
           showStories = this.showStories,
           releaseName = this.release.Name;
 
-
           if (model.isPortfolioItem()){
+
+            model.addField({
+               name: '__isOrphan',
+               defaultValue: false
+            });
 
             model.addField({
                   name: '__dateBucket',
@@ -244,50 +298,68 @@ Ext.define("CArABU.technicalservices.portfolioreleasetracking.Board", {
                     return db;
                   }
               });
-
           } else {
 
-              model.addField({
-                  name: '__dateBucket',
-                  defaultValue:  null,
-                  convert: function(v,record){
-                    var it = record.get('Iteration') && record.get('Iteration')._refObjectName;
-                    var db = null;
+           model.addField({
+              name: '__totalCount',
+              defaultValue: 0
+           });
+           model.addField({
+              name: '__acceptedCount',
+              defaultValue: 0
+           });
+           model.addField({
+              name: '__totalPoints',
+              defaultValue: 0
+           });
+           model.addField({
+              name: '__acceptedPoints',
+              defaultValue: 0
+           });
+           model.addField({
+               name: '__isHidden',
+               defaultValue: false
+           });
+           model.addField({
+             name: '__isOrphan',
+             convert: function(v,record){
+                     if (record.get('_type') == "defect" || !record.get(featureName)){
+                         return true;
+                     };
+                     return false;
+                 }
+            });
 
-                      _.each(iterations, function(i){
-                         if ((i.Name == it )){
-                            db = i.EndDate;
-                            return false;
-                         }
-                      });
+            model.addField({
+               name: '__dependency',
+               convert: function(v,record){
+                 if (record.get('_type') == "hierarchicalrequirement" && record.get(featureName) && record.get(featureName).Project.ObjectID != record.get('Project').ObjectID){
+                     console.log('__dependency!!');
+                     return record.get(featureName).FormattedID;
+                 };
+                 return false;
+               }
+            });
 
+            model.addField({
+                name: '__dateBucket',
+                defaultValue:  null,
+                convert: function(v,record){
+                  var it = record.get('Iteration') && record.get('Iteration')._refObjectName;
+                  var db = null;
 
-                   return db;
-                  }
-              });
+                    _.each(iterations, function(i){
+                       if ((i.Name == it )){
+                          db = i.EndDate;
+                          return false;
+                       }
+                    });
 
-              if (model.isUserStory()){
-                model.addField({
-                   name: '__isHidden',
-                   convert: function(v, record){
-                     console.log('__isHidden: ',record.get('Name'),' showStories=', showStories, ' showDependencies=',showDependencies);
-                     var  showThis = false;
+                 return db;
+                }
+            });
 
-                     if (showDependencies){
-                       showThis = record.get(featureName).Project._ref != record.get('Project')._ref;
-                     }
-
-                     console.log('showThis', showThis, record.get(featureName));
-                     if (showStories){
-                       showThis = !record.get(featureName); //|| record.get(featureName).Release.Name != releaseName; //This is an orphan.
-                     }
-                     console.log('showThis exiting=', showThis);
-                     return !showThis;
-                   }
-                });
-              }// end isUserStory model
           } //end if.. portfolioitem .. else
-
         return model;
     }
   });
