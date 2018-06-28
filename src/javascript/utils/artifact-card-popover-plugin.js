@@ -25,50 +25,93 @@ Ext.define('Rally.ui.cardboard.plugin.ArtifactCardPopover', {
     },
 
     showDescription: function() {
-        if (!Ext.getElementById('description-popover')) {
-            this._createPopover({
-                context: this.card.context,
-                field: 'Description',
-                offsetFromTarget: [{x:0, y:-10}, {x:12, y:0}, {x:0, y:10}, {x:-15, y:0}],
-                target: this.card.getEl().down('.formatted-id-template'),
-                targetSelector: '.' + this.card.getCardRecordCls() + ' .formatted-id-template'
-            });
+        if (/portfolioitem/.test(this.card.getRecord().getType())){
+          if (!Ext.getElementById('description-popover')) {
+            Ext.create('Rally.data.wsapi.Store',{
+                model: this.card.getRecord().getType(),
+                fetch: ['FormattedID','Name','PlannedEndDate'],
+                filters: [{
+                  property: 'ObjectID',
+                  value: this.card.getRecord().getOid()
+                }]
+            }).load({
+                callback: function(records, operation){
+                    if (operation.wasSuccessful()){
+                      this._createPopover({
+                          context: this.card.context,
+                          field: 'Description',
+                          record: records[0],
+                          offsetFromTarget: [{x:0, y:-10}, {x:12, y:0}, {x:0, y:10}, {x:-15, y:0}],
+                          target: this.card.getEl().down('.formatted-id-template'),
+                          targetSelector: '.' + this.card.getCardRecordCls() + ' .formatted-id-template'
+                      });
+                  }
+                },
+                scope: this
+          });
         }
+      }
     },
+    showItem: function(){
+        if (/portfolioitem/.test(this.card.getRecord().getType())){
 
-    showUserStories: function() {
-        var popoverConfig = {
-            field: 'LeafStoryCount',
-            offsetFromTarget: [{x:0, y:-8}, {x:15, y:0}, {x:5, y:15}, {x:-15, y:0}],
-            target: this.card.getEl().down('.story-summary'),
-            targetSelector: '.' + this.card.getCardRecordCls() + ' .story-summary',
-            name: 'LeafStoryCount'
-            // listViewConfig: {
-            //     addNewConfig: {
-            //         ignoredRequiredFields: ['Name', 'State', 'WorkProduct', 'Project', 'ScheduleState']
-            //     }
-            // }
-        };
+            Ext.create('Rally.data.wsapi.Store',{
+                model: this.card.getRecord().getType(),
+                fetch: ['FormattedID','Name','PlannedEndDate'],
+                filters: [{
+                  property: 'ObjectID',
+                  value: this.card.getRecord().getOid()
+                }]
+            }).load({
+                callback: function(records, operation){
+                    if (operation.wasSuccessful()){
+                      this._createPopover({
+                          field: 'UserStory',
+                          record: records[0],
+                          offsetFromTarget: [{x:0, y:-10}, {x:12, y:0}, {x:0, y:10}, {x:-15, y:0}],
+                          target: this.card.getEl().down('.ItemSummary'),
+                          targetSelector: '.' + this.card.getCardRecordCls() + ' .ItemSummary',
+                          listViewConfig: {
+                              gridConfig: {
+                                  columnCfgs: ['FormattedID','Name','ScheduleState','PlanEstimate','Owner'],
+                                  enableRanking: false
+                              }
+                          }
+                      });
+                  }
+                },
+                scope: this
+          });
 
-        // var fieldDefinition = _.find(this.card.getFieldDefinitions(), function (field) {
-        //     return field.name === 'UserStories';
-        // });
-        //
-        // if (fieldDefinition && fieldDefinition.popoverConfig) {
-        //     popoverConfig = Ext.merge(popoverConfig, fieldDefinition.popoverConfig);
-        // }
+      } else {
 
-        this._createPopover(popoverConfig);
-    },
 
-    showPredecessorsAndSuccessors: function() {
-        return this._createPopover({
-            field: 'PredecessorsAndSuccessors',
-            offsetFromTarget: [{x:0, y:-8}, {x:15, y:0}, {x:5, y:15}, {x:-15, y:0}],
-            target: this.card.getEl().down('.field-content.PredecessorsAndSuccessors')
+        this.card.select();
+        if (this.popover) {
+            this.popover.destroy();
+        }
+
+        this.popover = Ext.create('Rally.ui.popover.OrphanPopover',{
+          modelNames: this.card.getRecord().getItemModels(),
+          title: this.card.getRecord().getGroupName(),
+          gridConfig: {
+              columnCfgs: ['FormattedID','Name','ScheduleState','PlanEstimate','Owner'],
+              storeConfig: {
+                  filters: this.card.getRecord().getItemFilters()
+              }
+          },
+          offsetFromTarget: [{x:0, y:-10}, {x:12, y:0}, {x:0, y:10}, {x:-15, y:0}],
+          target: this.card.getEl().down('.ItemSummary'),
+          targetSelector: '.' + this.card.getCardRecordCls() + ' .ItemSummary',
+          offsetFromTarget: [{x:0, y:-8}, {x:15, y:0}, {x:5, y:8}, {x:-15, y:0}],
+          autoShow: false
         });
-    },
+        this.popover.on('destroy', this._onPopoverDestroy, this);
+        this.popover.on('afterrender', this._onPopoverAfterRender, this);
+        this.popover.show();
 
+      }
+    },
     _createPopover: function(popoverCfg) {
         this.card.select();
         if (this.popover) {
@@ -77,13 +120,13 @@ Ext.define('Rally.ui.cardboard.plugin.ArtifactCardPopover', {
         this.popover = Rally.ui.popover.PopoverFactory.bake(Ext.apply({
             target: this.card.getEl(),
             targetSelector: '.' + this.card.getCardRecordCls(),
-            record: this.card.getRecord(),
             offsetFromTarget: [{x:0, y:-8}, {x:15, y:0}, {x:5, y:8}, {x:-15, y:0}],
             autoShow: false
         }, popoverCfg));
         this.popover.on('destroy', this._onPopoverDestroy, this);
         this.popover.on('afterrender', this._onPopoverAfterRender, this);
         this.popover.show();
+
     },
 
     _onPopoverDestroy: function() {
@@ -104,20 +147,6 @@ Ext.define('Rally.ui.cardboard.plugin.ArtifactCardPopover', {
         if(Ext.isFunction(fn)) {
             fn.call(this);
         }
-    },
-
-    _showProgressPopover: function (progressFieldName) {
-        var cardEl = this.card.getEl();
-        var record = this.card.getRecord();
-
-        this._createPopover({
-            field: progressFieldName,
-            target: cardEl.down('.field-' + progressFieldName + '.progress-bar-container'),
-            targetSelector: '#' + cardEl.id + ' .field-' + progressFieldName + '.progress-bar-container',
-            percentDoneData: record.data,
-            percentDoneName: 'PercentDoneByStoryCount',
-            piRef: record.data._ref
-        });
     },
 
     _onRerender: function() {

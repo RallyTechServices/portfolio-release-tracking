@@ -17,7 +17,7 @@ Ext.define('CArABU.technicalservices.plugin.TrackingCardContentLeft', {
                        '<div class="left-header">',
                            '<div class="id" style="min-width: {idWidth}px">{formattedId}</div>',
                            '<div class="dependency {dep}"></div>', //{depID}
-                           '<div class="story-summary">{summary}</div>',
+                           '<div class="field-content ItemSummary">{summary}</div>',
                            '</span>',
                        '</div>']);
                }

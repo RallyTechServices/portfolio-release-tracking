@@ -11,11 +11,27 @@
    setupPlugins: function () {
 
       var plugins = [
-          {ptype: 'rallycardpopover'},
+          {ptype: 'artifactcardpopover'},
           {ptype: 'trackingcardcontentleft'}
       ];
+
       return _.uniq(plugins, 'ptype');
   },
+
+  // _onClick: function(e) {
+  //          var target = e.getTarget('.field-content', this._getCardContent(), false);
+  //          if (!target) {
+  //              return;
+  //          }
+  //
+  //          var classNames = target.className.split(' ');
+  //          var fieldName = _.find(classNames, function(className) {
+  //              return !_.contains(['field-content', 'status-field'], className);
+  //          });
+  //          if (Ext.isDefined(fieldName) && !_.contains(classNames, 'editable')) {
+  //              this._onFieldClick(fieldName.replace(/Summary$/, ''), e, target);
+  //          }
+  //      },
   getConnectorPoint: function(toX, toY){
 
       var thisEl = this.getEl();

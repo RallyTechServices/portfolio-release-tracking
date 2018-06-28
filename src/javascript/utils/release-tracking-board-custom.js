@@ -39,13 +39,12 @@ Ext.define("CArABU.technicalservices.portfolioreleasetracking.Board", {
 
     constructor: function(config){
 
-    //  this._getColumns(config);
-
       this.mergeConfig(config);
-    //    this._setRowConfig(config);
       this.callParent(arguments);
 
+
     },
+
     getRowFor: function (item) {
     var rows = this.getRows(),
         record = item.isModel ? item : item.getRecord(),
@@ -80,21 +79,59 @@ Ext.define("CArABU.technicalservices.portfolioreleasetracking.Board", {
         return recs;
     },
   _parseRows: function() {
-    var vals = [];
-      _.each(this.artifacts, function(a){
-          if (!_.contains(vals, a.get('Project'))){
-              vals.push(a.get('Project'));
-          }
-      });
 
-      //TODO: Sort projects
+      var projectParents = _.reduce(this.results, function(pph, r){
+          _.each(r, function(rec){
+              var proj = rec.get('Project');
+              pph[proj._refObjectName] = proj.Parent && proj.Parent._refObjectName || null;
+          });
+          return pph;
+      }, {});
+
+    var sortedProjects = Ext.Array.sort(_.keys(projectParents));
+
+     var hierarchicalSortedProjects = _.reduce(sortedProjects, function(top,project, list){
+         if (!_.contains(sortedProjects, projectParents[project])){
+            top.push(project);
+         }
+         return top;
+     },[]);
+
+     sortedProjects.reverse();
+     var next = _.difference(sortedProjects, hierarchicalSortedProjects);  //returns all projects not in the top level
+      console.log('next', Ext.clone(next));
+     while (next.length > 0){
+       hierarchicalSortedProjects = _.reduce(next, function(hsl,project){
+           if (_.contains(hsl, projectParents[project])){
+               var idx = _.indexOf(hsl,projectParents[project]);
+               hsl.splice(idx+1,0,project);
+           }
+           return hsl;
+       },hierarchicalSortedProjects);
+       next = _.difference(sortedProjects, hierarchicalSortedProjects);  //returns all projects not in the top level
+       console.log('next', Ext.clone(next));
+     }
+
+     var relevantProjects =  _.reduce(this.artifacts, function(arr, a){
+           if (!_.contains(arr, a.get('Project'))){
+               arr.push(a.get('Project'));
+           }
+           return arr;
+       },[]);
+
+       var vals = _.sortBy(relevantProjects, function(p){
+          return _.indexOf(hierarchicalSortedProjects,p);
+       });
+
+       console.log('vals',vals, relevantProjects, hierarchicalSortedProjects);
 
       this.rowConfig.values = vals;
-    return Deft.Promise.when()
-},
+      return Deft.Promise.when()
+    },
     _retrieveModels: function(success){
 
         this.models = [Ext.create('CArABU.technicalservices.portfolioreleasetracking.ArtifactModel')];
+        this.artifacts = this._buildArtifactRecords(this.results);
         this.onModelsRetrieved(success);
     },
     _buildColumnsFromModel: function () {
@@ -107,6 +144,7 @@ Ext.define("CArABU.technicalservices.portfolioreleasetracking.Board", {
                   showDefects = this.showDefects,
                   showDependencies = this.showDependencies,
                   artifacts = this.artifacts;
+
 
                 var columns = [];
 
@@ -139,13 +177,127 @@ Ext.define("CArABU.technicalservices.portfolioreleasetracking.Board", {
 
                 });
 
+                this.fireEvent('columnsretrieved', this, columns);
 
-                            this.fireEvent('columnsretrieved', this, columns);
+                this.columnDefinitions = [];
+                this._toggleMask(true);
+                _.each(columns, this.addColumn, this);
+                this.renderColumns();
 
-                            this.columnDefinitions = [];
-                            this._toggleMask(true);
-                            _.each(columns, this.addColumn, this);
-                            this.renderColumns();
+        },
+        _buildArtifactRecords: function(results){
 
+            var featureName = this.featureName,
+                showDefects = this.showDefects,
+                showStories = this.showStories,
+                showDependencies = this.showDependencies,
+                iterations = this.iterations;
+
+            var featureHash = {};
+
+            var models = _.map(results[0], function(rec){
+              var m = Ext.create('CArABU.technicalservices.portfolioreleasetracking.ArtifactModel',{
+                    __dateBucket: this._getFeatureDateBucket(rec,iterations),
+                    id: rec.getId()
+                });
+                featureHash[rec.get('FormattedID')] = m;
+                m.addItem(rec.getData());
+                return m;
+            }, this);
+
+            if (showStories || showDependencies){
+                var dependencies = results[1];
+                var depModels = this._groupDependencies(dependencies, featureName);
+                _.each(depModels, function(d){
+                    if (featureHash[d.get('__dependency')]){
+                        featureHash[d.get('__dependency')].addChildDependency(d.get('FormattedID'));
+                    }
+                });
+                models = models.concat(depModels);
+            }
+
+
+            var orphans = [];
+            if (showStories){
+               orphans = results[2];
+            }
+            if (showDefects){
+               orphans = orphans.concat(results[3]);
+            }
+            models = models.concat(this._groupOrphans(orphans));
+            return models;
+        },
+        _getFeatureDateBucket: function(rec, iterations){
+          var dt = rec.get('PlannedEndDate'),
+                 db = null;
+
+             _.each(iterations, function(i){
+                if ((i.StartDate < dt ) && (i.EndDate >= dt)){
+                   db = Rally.util.DateTime.format(i.EndDate, 'Y-m-d');
+                   return false;
+                }
+             });
+             return db;
+        },
+        _groupOrphans: function(records){
+          var hash = {},
+            groupedModels = [];
+
+         _.each(records, function(r){
+             var d = r.getData(),
+                 project = d.Project.Name,
+                 iteration = d.Iteration && d.Iteration.Name || "Unscheduled";
+
+               if (!hash[project]){
+                   hash[project] = {};
+               }
+               if (!hash[project][iteration]){
+                 var db = d.Iteration ? Rally.util.DateTime.format(Rally.util.DateTime.fromIsoString(d.Iteration.EndDate), 'Y-m-d') : null;
+                hash[project][iteration] = Ext.create('CArABU.technicalservices.portfolioreleasetracking.ArtifactModel',{
+                      __groupedItem: true,
+                      Project: project,
+                      __dateBucket: db,
+                      id: r.getId()
+                    });
+                    groupedModels.push(hash[project][iteration]);
+              }
+              hash[project][iteration].addItem(d);
+         });
+         return groupedModels;
+        },
+        _groupDependencies: function(records, featureName){
+              var hash = {},
+                groupedModels = [];
+
+             _.each(records, function(r){
+                 var d = r.getData(),
+                     project = d.Project.Name,
+                     iteration = d.Iteration && d.Iteration.Name || "Unscheduled",
+                     feature = d[featureName] || null;
+
+                var dependency = feature && (feature.Project._refObjectName != project) && feature.FormattedID || null;
+
+                 if (dependency){
+                   if (!hash[project]){
+                       hash[project] = {};
+                   }
+                   if (!hash[project][iteration]){
+                     hash[project][iteration] = {}
+                   }
+                   if (!hash[project][iteration][dependency]){
+                     var db = d.Iteration ? Rally.util.DateTime.format(Rally.util.DateTime.fromIsoString(d.Iteration.EndDate), 'Y-m-d') : null;
+                     hash[project][iteration][dependency] = Ext.create('CArABU.technicalservices.portfolioreleasetracking.ArtifactModel',{
+                           __groupedItem: true,
+                           Project: project,
+                           __dateBucket: db,
+                           id: r.getId(),
+                           __dependency: dependency
+                         });
+                         groupedModels.push(hash[project][iteration][feature.FormattedID]);
+                   }
+                   hash[project][iteration][feature.FormattedID].addItem(d);
+                 }
+             });
+             return groupedModels;
         }
   });

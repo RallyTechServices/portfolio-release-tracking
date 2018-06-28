@@ -42,11 +42,20 @@ Ext.define('CArABU.technicalservices.portfolioreleasetracking.ArtifactModel', {
           name: '__dateBucket',
           defaultValue:  null
         }],
+         isSearch: function(){
+            return false;
+         },
          hasField: function(field){
             return true;
          },
          getId: function(){
             return this.get('id');
+         },
+         getType: function(){
+            return this.get('__items') && this.get('__items')[0] && this.get('__items')[0]._type;
+         },
+         getOid: function(){
+            return this.get('__items') && this.get('__items')[0] && this.get('__items')[0].ObjectID;
          },
          getField: function(fieldName){
             var field = _.find(this.getFields(), function(f){ return fieldName == f.name; });
@@ -76,6 +85,44 @@ Ext.define('CArABU.technicalservices.portfolioreleasetracking.ArtifactModel', {
             this.set('__acceptedPoints', this._setAcceptedPoints(items));
             this.set('Project', item.Project.Name);
             this.set('__items', items);
+         },
+         getItemFilters: function(){
+
+           if (this.get('__childDependencies')){
+              //This is a PI
+              return [{
+                  property: 'Feature.ObjectID',  //TODO: FIX THIS to use the right name 
+                  value: this.get('__items')[0].ObjectID
+              },{
+                  property: 'DirectChildrenCount',
+                  value: 0
+              }];
+           }
+
+            var filters = _.map(this.get('__items'), function(i){
+                 return {
+                     property: 'ObjectID',
+                     value: i.ObjectID
+                 };
+             });
+             return Rally.data.wsapi.Filter.or(filters);
+
+
+         },
+         getItemModels: function(){
+           var models = [];
+           if (_.find(this.get('__items'), {_type: 'hierarchicalrequirement'})){
+               models.push('HierarchicalRequirement');
+           }
+           if (_.find(this.get('__items'), {_type: 'defect'})){
+               models.push("Defect");
+           }
+
+           if (models.length == 0){ //This is portfolioitem and we want to return a story model
+             models.push('HierarchicalRequirement');
+           }
+
+           return models;
          },
          getGroupName: function(){
              var name = [];
