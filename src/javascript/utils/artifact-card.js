@@ -16,10 +16,41 @@
       ];
       return _.uniq(plugins, 'ptype');
   },
+  getConnectorPoint: function(toX, toY){
+
+      var thisEl = this.getEl();
+      var thisX = this.getX(),
+          thisY = this.getY(),
+          thisWidth = this.getWidth(),
+          thisHeight = this.getHeight(),
+          x = thisX,
+          y = thisY;// + thisEl.getMargin().top ;
+
+      if (toX > thisX){
+          x = thisX + thisWidth - 5;
+      }
+      if (toX == thisX){
+          x = thisX + thisWidth/2;
+      }
+      if (toX < thisX){
+         x = thisX + 5;
+      }
+      if (toY == thisY){
+          y = thisY + thisHeight/2;
+      }
+      if (toY > thisY){
+          y = thisY + thisHeight - 5;
+      }
+      if (toY < thisY){
+          y = thisY + 5;
+      }
+      return {x: x, y: y}
+
+  },
   _buildHtml: function () {
       var html = [];
 
-      if (!this.record.get('__isOrphan') && this.record.get('DisplayColor')){
+      if (!this.record.get('__groupedItem') && this.record.get('DisplayColor')){
               var artifactColorDiv = {
                   tag: 'div',
                   cls: 'artifact-color'
