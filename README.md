@@ -1,10 +1,8 @@
 # Portfolio Release Tracking Board
 
-*** IN PROGRESS *** June 2018
-
 ## Summary/Description
 
-![screenshot](./images/screenshot.png "This is an example")
+![screenshot](./images/releasetracking.png)
 
 This app is designed to run on a Release scoped dashboard.  
 
@@ -13,11 +11,25 @@ An alternate release tracking board with the following differences from the Port
 *  If a Level 1 Portfolio Item does not have a Planned End Date, then it will show up in the Unscheduled column
 *  Names of the features are included on the cards
 *  Board is read only and cards cannot be dragged across projects or iterations
-*  Dependences....TODO
+*  Dependencies are defined as stories that belong to features that are not in the same project as their parent feature.  No story or feature predecessors or successors are shown in this app.  
 
 Dataset for this app is the following:
-* All Features associated explicitly with the currently selected release.  This association is determined by comparing the Release Name only (not Name + ReleaseStartDate + ReleaseEndDate);
-* Any orphaned Stories or Defects explicitly associated with the currently selected release. Note that this behavior is different from the current release tracking board in that it does not show Stories or Defects associated with iterations within the Release timebox.
+* All Features associated explicitly with the currently selected release within the current project scope.  This association is determined by comparing the Release Name only (not Name + ReleaseStartDate + ReleaseEndDate);
+* Any orphaned Stories or Defects explicitly associated with the currently selected release within the selected project scope. Note that this behavior is different from the current release tracking board in that it does not show Stories or Defects associated with iterations within the Release timebox.
+* Any "dependent" (as defined above) stories in the workspace. If the "dependent" story is outside of the currently selected project scope, it will still be shown.
+
+### Toggles
+* Show Stories - this will show all orphaned stories associated with the release AND any "dependent" stories for Features in the current project scope associated with the selected release.  
+* Show Defects - this will show all orphaned defects associated with the release in the current project scope.  
+* Show Dependencies - this will show all "dependency" lines between stories and features that do not share the same project.
+
+### App Settings
+*  Use count or points -
+
+### Known Issues/Remaining unimplemented work as of 06/29/2018:
+Users will be able to click on the dependency icon to see individual dependency relationships.
+Popovers will not work when dependency lines are drawn
+
 
 ## Development Notes
 
