@@ -18,57 +18,49 @@ Ext.define("CArABU.technicalservices.portfolioreleasetracking.Board", {
       readOnly: true,
       attribute: '__dateBucket',
       rowConfig: {
-         field: "Project",
-         fieldDef: {readOnly: true, name: 'Project'},
-         headerConfig: {
-            xtype: 'artifactboardrowheader'
-         }
+        field: "Project",
+        fieldDef: {readOnly: true, name: 'Project'},
+        headerConfig: {
+          xtype: 'artifactboardrowheader'
+        }
       },
       columnConfig: {
-         xtype: 'artifactboardcolumn',
-           columnHeaderConfig: {
-               headerTpl: '<span class="iname">{Name}</span><tpl if="StartDate"><br/><span class="idates">{[Rally.util.DateTime.format(values.StartDate,"Y-m-d")]} - {[Rally.util.DateTime.format(values.EndDate,"Y-m-d")]}</span></tpl>'
-           }
-       },
-       cardConfig: {
-          xtype: 'trackingcard'
+        xtype: 'artifactboardcolumn',
+        columnHeaderConfig: {
+          headerTpl: '<span class="iname">{Name}</span><tpl if="StartDate"><br/><span class="idates">{[Rally.util.DateTime.format(values.StartDate,"Y-m-d")]} - {[Rally.util.DateTime.format(values.EndDate,"Y-m-d")]}</span></tpl>'
+        }
+      },
+      cardConfig: {
+        xtype: 'trackingcard'
       }
     },
 
     dependencies: null,
 
     constructor: function(config){
-
       this.mergeConfig(config);
       this.callParent(arguments);
-
-
     },
 
     getRowFor: function (item) {
-    var rows = this.getRows(),
-        record = item.isModel ? item : item.getRecord(),
-        row;
+      var rows = this.getRows(),
+          record = item.isModel ? item : item.getRecord(),
+          row;
 
-        console.log('rows',rows);
+      if (this._hasValidRowField()) {
+          row = _.find(rows, function (row) {
+              return row.isMatchingRecord(record);
+          }) ||
+          this._createRow({
+              showHeader: true,
+              value: record.get(this.rowConfig.field)
+          }, true);
+      } else {
+          row = rows[0] || this._createDefaultRow();
+      }
 
-    if (this._hasValidRowField()) {
-        console.log('has valid row field');
-        row = _.find(rows, function (row) {
-            return row.isMatchingRecord(record);
-        }) ||
-        this._createRow({
-            showHeader: true,
-            value: record.get(this.rowConfig.field)
-        }, true);
-    } else {
-        console.log('does not have valid row field');
-        row = rows[0] || this._createDefaultRow();
-    }
-
-    return row;
-},
-
+      return row;
+    },
 
     _getColumnRecords: function(records, iteration){
        var db = iteration ? Rally.util.DateTime.format(iteration.EndDate, 'Y-m-d') : null;
@@ -78,7 +70,8 @@ Ext.define("CArABU.technicalservices.portfolioreleasetracking.Board", {
         });
         return recs;
     },
-  _parseRows: function() {
+
+    _parseRows: function() {
 
       var projectParents = _.reduce(this.results, function(pph, r){
           _.each(r, function(rec){
@@ -88,18 +81,18 @@ Ext.define("CArABU.technicalservices.portfolioreleasetracking.Board", {
           return pph;
       }, {});
 
-    var sortedProjects = Ext.Array.sort(_.keys(projectParents));
+      var sortedProjects = Ext.Array.sort(_.keys(projectParents));
 
-     var hierarchicalSortedProjects = _.reduce(sortedProjects, function(top,project, list){
-         if (!_.contains(sortedProjects, projectParents[project])){
-            top.push(project);
-         }
-         return top;
-     },[]);
+      var hierarchicalSortedProjects = _.reduce(sortedProjects, function(top,project, list){
+        if (!_.contains(sortedProjects, projectParents[project])){
+          top.push(project);
+        }
+        return top;
+      },[]);
 
      sortedProjects.reverse();
      var next = _.difference(sortedProjects, hierarchicalSortedProjects);  //returns all projects not in the top level
-      console.log('next', Ext.clone(next));
+
      while (next.length > 0){
        hierarchicalSortedProjects = _.reduce(next, function(hsl,project){
            if (_.contains(hsl, projectParents[project])){
@@ -109,7 +102,6 @@ Ext.define("CArABU.technicalservices.portfolioreleasetracking.Board", {
            return hsl;
        },hierarchicalSortedProjects);
        next = _.difference(sortedProjects, hierarchicalSortedProjects);  //returns all projects not in the top level
-       console.log('next', Ext.clone(next));
      }
 
      var relevantProjects =  _.reduce(this.artifacts, function(arr, a){
@@ -123,14 +115,12 @@ Ext.define("CArABU.technicalservices.portfolioreleasetracking.Board", {
           return _.indexOf(hierarchicalSortedProjects,p);
        });
 
-       console.log('vals',vals, relevantProjects, hierarchicalSortedProjects);
-
       this.rowConfig.values = vals;
       return Deft.Promise.when()
     },
     _retrieveModels: function(success){
-
         this.models = [Ext.create('CArABU.technicalservices.portfolioreleasetracking.ArtifactModel')];
+        //TODO: fetch records here... 
         this.artifacts = this._buildArtifactRecords(this.results);
         this.onModelsRetrieved(success);
     },
@@ -144,7 +134,6 @@ Ext.define("CArABU.technicalservices.portfolioreleasetracking.Board", {
                   showDefects = this.showDefects,
                   showDependencies = this.showDependencies,
                   artifacts = this.artifacts;
-
 
                 var columns = [];
 

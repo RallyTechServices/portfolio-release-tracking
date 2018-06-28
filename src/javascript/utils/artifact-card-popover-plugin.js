@@ -97,7 +97,8 @@ Ext.define('Rally.ui.cardboard.plugin.ArtifactCardPopover', {
           gridConfig: {
               columnCfgs: ['FormattedID','Name','ScheduleState','PlanEstimate','Owner'],
               storeConfig: {
-                  filters: this.card.getRecord().getItemFilters()
+                  filters: this.card.getRecord().getItemFilters(),
+                  context: { project: null }
               }
           },
           offsetFromTarget: [{x:0, y:-10}, {x:12, y:0}, {x:0, y:10}, {x:-15, y:0}],
