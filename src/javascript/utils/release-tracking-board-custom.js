@@ -207,7 +207,7 @@ Ext.define("CArABU.technicalservices.portfolioreleasetracking.Board", {
 
             if (showStories || showDependencies){
                 var dependencies = results[1];
-                var depModels = this._groupDependencies(dependencies, featureName);
+                var depModels = this._groupDependencies(dependencies, featureName, featureHash);
                 _.each(depModels, function(d){
                     if (featureHash[d.get('__dependency')]){
                         featureHash[d.get('__dependency')].addChildDependency(d.get('FormattedID'));
@@ -265,7 +265,7 @@ Ext.define("CArABU.technicalservices.portfolioreleasetracking.Board", {
          });
          return groupedModels;
         },
-        _groupDependencies: function(records, featureName){
+        _groupDependencies: function(records, featureName, featureHash){
               var hash = {},
                 groupedModels = [];
 
@@ -275,7 +275,7 @@ Ext.define("CArABU.technicalservices.portfolioreleasetracking.Board", {
                      iteration = d.Iteration && d.Iteration.Name || "Unscheduled",
                      feature = d[featureName] || null;
 
-                var dependency = feature && (feature.Project._refObjectName != project) && feature.FormattedID || null;
+                var dependency = feature && (feature.Project._refObjectName != project) && featureHash[feature.FormattedID] && feature.FormattedID || null;
 
                  if (dependency){
                    if (!hash[project]){

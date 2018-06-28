@@ -468,6 +468,10 @@ Ext.define("CArABU.technicalservices.app.PortfolioReleaseTrackingBoard", {
               property: "Release.Name",
               value: releaseName
             }],
+            context: {
+               project: this.getContext().getProject()._ref,
+               projectScopeDown: this.getContext().getProjectScopeDown()
+            },
            limit: 'Infinity'
         };
     },
