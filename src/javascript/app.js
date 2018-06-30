@@ -21,12 +21,18 @@ Ext.define("CArABU.technicalservices.app.PortfolioReleaseTrackingBoard", {
         }
 
         var release = this.getContext().getTimeboxScope().getRecord();
-
+         this.on('resize',this._resizeDependents, this);
          this._fetchIterations(release).then({
             success: this._initializeApp,
             failure: this._showErrorNotification,
             scope: this
          });
+
+    },
+    _resizeDependents: function(){
+       if (this.getShowDependencies() && this.down('#trackingbboard')){
+          this.toggleDependencies(this.down('#trackingbboard'))   
+       }
 
     },
     _validate: function(){
@@ -102,8 +108,10 @@ Ext.define("CArABU.technicalservices.app.PortfolioReleaseTrackingBoard", {
         });
     },
     toggleDependencies: function(board){
+      if (this.down('#dependencies')){
+          this.down('#dependencies').destroy();
+      }
       if (!board){
-         this.down('#dependencies') && this.down('#dependencies').destroy();
          return;
       }
 
@@ -161,9 +169,9 @@ Ext.define("CArABU.technicalservices.app.PortfolioReleaseTrackingBoard", {
       var drawComponent = Ext.create('Ext.draw.Component', {
           style: Ext.String.format('position:absolute; top:{0}px; left:{1}px;z-index:auto', boardY,boardX),
           itemId: 'dependencies',
+          id: 'dep',
           viewBox: false,
           margin: 10,
-          //cls: 'dependencycomponent',
           height: board.getHeight(),
           width: board.getWidth(),
           items: items
@@ -212,8 +220,6 @@ Ext.define("CArABU.technicalservices.app.PortfolioReleaseTrackingBoard", {
       if (iterations){
           this.iterations = iterations;
       }
-  //    var artifacts = this._buildArtifactRecords(this.results, this.iterations);
-
       this.toggleDependencies(false);
 
       var board = this.down('#trackingbboard');
@@ -280,117 +286,7 @@ Ext.define("CArABU.technicalservices.app.PortfolioReleaseTrackingBoard", {
           }]
         });
     },
-    // _buildArtifactRecords: function(results, iterations){
-    //
-    //     var featureName = this.getPortfolioItemName(),
-    //         showDefects = this.getShowDefects(),
-    //         showStories = this.getShowStories(),
-    //         showDependencies = this.getShowDependencies();
-    //
-    //     var featureHash = {};
-    //     var models = _.map(results[0], function(rec){
-    //       var m = Ext.create('CArABU.technicalservices.portfolioreleasetracking.ArtifactModel',{
-    //             __dateBucket: this._getFeatureDateBucket(rec,iterations),
-    //             id: rec.getId()
-    //         });
-    //         featureHash[rec.get('FormattedID')] = m;
-    //         m.addItem(rec.getData());
-    //         return m;
-    //     }, this);
-    //
-    //     if (this.getShowDependencies() || this.getShowStories()){
-    //         var dependencies = results[1];
-    //         var depModels = this._groupDependencies(dependencies, featureName);
-    //         _.each(depModels, function(d){
-    //             featureHash[d.get('__dependency')].addChildDependency(d.get('FormattedID'));
-    //         });
-    //         models = models.concat(depModels);
-    //     }
-    //
-    //
-    //     var orphans = [];
-    //     if (this.getShowStories()){
-    //        orphans = results[2];
-    //     }
-    //     if (this.getShowDefects()){
-    //        orphans = orphans.concat(results[3]);
-    //     }
-    //     models = models.concat(this._groupOrphans(orphans));
-    //     return models;
-    // },
-    // _getFeatureDateBucket: function(rec, iterations){
-    //   var dt = rec.get('PlannedEndDate'),
-    //          db = null;
-    //
-    //      _.each(iterations, function(i){
-    //         if ((i.StartDate < dt ) && (i.EndDate >= dt)){
-    //            db = Rally.util.DateTime.format(i.EndDate, 'Y-m-d');
-    //            return false;
-    //         }
-    //      });
-    //      return db;
-    // },
-    // _groupOrphans: function(records){
-    //   var hash = {},
-    //     groupedModels = [];
-    //
-    //  _.each(records, function(r){
-    //      var d = r.getData(),
-    //          project = d.Project.Name,
-    //          iteration = d.Iteration && d.Iteration.Name || "Unscheduled";
-    //
-    //        if (!hash[project]){
-    //            hash[project] = {};
-    //        }
-    //        if (!hash[project][iteration]){
-    //          var db = d.Iteration ? Rally.util.DateTime.format(Rally.util.DateTime.fromIsoString(d.Iteration.EndDate), 'Y-m-d') : null;
-    //         hash[project][iteration] = Ext.create('CArABU.technicalservices.portfolioreleasetracking.ArtifactModel',{
-    //               __groupedItem: true,
-    //               Project: project,
-    //               __dateBucket: db,
-    //               id: r.getId()
-    //             });
-    //             groupedModels.push(hash[project][iteration]);
-    //       }
-    //       hash[project][iteration].addItem(d);
-    //  });
-    //  return groupedModels;
-    // },
-    // _groupDependencies: function(records, featureName){
-    //       var hash = {},
-    //         groupedModels = [];
-    //
-    //      _.each(records, function(r){
-    //          var d = r.getData(),
-    //              project = d.Project.Name,
-    //              iteration = d.Iteration && d.Iteration.Name || "Unscheduled",
-    //              feature = d[featureName] || null;
-    //
-    //              var dependency = feature && (feature.Project._refObjectName != project) && feature.FormattedID || null;
-    //
-    //          if (dependency){
-    //            if (!hash[project]){
-    //                hash[project] = {};
-    //            }
-    //            if (!hash[project][iteration]){
-    //              hash[project][iteration] = {}
-    //            }
-    //            if (!hash[project][iteration][dependency]){
-    //              var db = d.Iteration ? Rally.util.DateTime.format(Rally.util.DateTime.fromIsoString(d.Iteration.EndDate), 'Y-m-d') : null;
-    //              hash[project][iteration][dependency] = Ext.create('CArABU.technicalservices.portfolioreleasetracking.ArtifactModel',{
-    //                    __groupedItem: true,
-    //                    Project: project,
-    //                    __dateBucket: db,
-    //                    id: r.getId(),
-    //                    __dependency: dependency
-    //                  });
-    //                  groupedModels.push(hash[project][iteration][feature.FormattedID]);
-    //            }
-    //            hash[project][iteration][feature.FormattedID].addItem(d);
-    //          }
-    //      });
-    //      return groupedModels;
-    // },
+
     _fetchWsapiRecords: function(config){
         var deferred = Ext.create('Deft.Deferred');
 
