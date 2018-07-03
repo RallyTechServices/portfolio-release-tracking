@@ -31,7 +31,7 @@ Ext.define("CArABU.technicalservices.app.PortfolioReleaseTrackingBoard", {
     },
     _resizeDependents: function(){
        if (this.getShowDependencies() && this.down('#trackingbboard')){
-          this.toggleDependencies(this.down('#trackingbboard'))   
+          this.toggleDependencies(this.down('#trackingbboard'))
        }
 
     },
@@ -195,21 +195,34 @@ Ext.define("CArABU.technicalservices.app.PortfolioReleaseTrackingBoard", {
       var releaseName = this.getContext().getTimeboxScope().getRecord().get('Name'),
           featureName = this.getPortfolioItemName();
 
-      var promises = [this._fetchWsapiRecords(this._getFeatureConfig(releaseName, featureName)),
-        this._fetchWsapiRecords(this._getDependentStoryConfig(releaseName, featureName)),
-        this._fetchWsapiRecords(this._getOrphanStoryConfig(releaseName, featureName)),
-        this._fetchWsapiRecords(this._getOrphanDefectConfig(releaseName))];
+     this._fetchWsapiRecords(this._getFeatureConfig(releaseName, featureName)).then({
+        success: function(records){
+          var promises = [
+            //this._fetchWsapiRecords(this._getFeatureConfig(releaseName, featureName)),
+            this._fetchWsapiRecords(this._getDependentStoryConfig(releaseName, featureName, records)),
+            this._fetchWsapiRecords(this._getOrphanStoryConfig(releaseName, featureName)),
+            this._fetchWsapiRecords(this._getOrphanDefectConfig(releaseName))
+          ];
 
-      Deft.Promise.all(promises).then({
-         success: function(results){
-            //var records = this._buildArtifactRecords(results, iterations, featureName);
-            deferred.resolve(results);
-         },
-         failure: function(msg){
-            deferred.reject(msg);
-         },
-         scope: this
-      });
+          Deft.Promise.all(promises).then({
+             success: function(results){
+                //var records = this._buildArtifactRecords(results, iterations, featureName);
+                results.unshift(records)
+                console.log('results',results);
+                deferred.resolve(results);
+             },
+             failure: function(msg){
+                deferred.reject(msg);
+             },
+             scope: this
+          });
+        },
+        failure: this._showErrorNotification,
+        scope: this
+
+     });
+
+
       return deferred.promise;
     },
     _buildBoard: function(iterations, results){
@@ -315,6 +328,7 @@ Ext.define("CArABU.technicalservices.app.PortfolioReleaseTrackingBoard", {
               property: featureName,
               value: ""
           }],
+          pageSize: 2000,
           limit: 'Infinity'
        };
     },
@@ -333,25 +347,62 @@ Ext.define("CArABU.technicalservices.app.PortfolioReleaseTrackingBoard", {
        };
 
     },
-    _getDependentStoryConfig: function(releaseName, featureName){
+    _getDependentStoryConfig: function(releaseName, featureName, features){
 
-        var fields = ['Name','FormattedID','Project','Parent','Release','PlanEstimate','AcceptedDate','Iteration','EndDate',featureName];
+      var fields = ['Name','FormattedID','Project','Parent','Release','PlanEstimate','AcceptedDate','Iteration','EndDate',featureName];
+      var uniqueProjects = _.reduce(features, function(arr,f){
+          if (!_.contains(arr, f.get('Project').ObjectID)){
+            arr.push(f.get('Project').ObjectID);
+          }
+          return arr;
+      },[]);
+      var filters = _.map(features, function(f){
+         console.log('feature project', f.get('Project').ObjectID);
+         return Rally.data.wsapi.Filter.and([{
+           property: featureName + '.ObjectID',
+           value: f.get('ObjectID')
+         },{
+           property: 'DirectChildrenCount',
+          value: 0
+         },{
+           property: 'Project.ObjectID',
+           operator: '!=',
+           value: f.get('Project').ObjectID
+         }]);
+      });
+      filters = Rally.data.wsapi.Filter.or(filters);
 
-        return {
-           model: "HierarchicalRequirement",
-           fetch: fields,
-           filters: [{
-             property: featureName + ".Release.Name",
-             value: releaseName
-           },{
-             property: 'DirectChildrenCount',
-             value: 0
-           }],
-           context: {
-              project: null
-           },
-           limit: 'Infinity'
-        };
+
+      return {
+         model: "HierarchicalRequirement",
+         fetch: fields,
+         filters: filters,
+         enablePostGet: true,
+         context: {
+            project: null
+         },
+         pageSize: 2000,
+         limit: 'Infinity'
+      };
+
+        // var fields = ['Name','FormattedID','Project','Parent','Release','PlanEstimate','AcceptedDate','Iteration','EndDate',featureName];
+        //
+        // return {
+        //    model: "HierarchicalRequirement",
+        //    fetch: fields,
+        //    filters: [{
+        //      property: featureName + ".Release.Name",
+        //      value: releaseName
+        //    },{
+        //      property: 'DirectChildrenCount',
+        //      value: 0
+        //    }],
+        //    context: {
+        //       project: null
+        //    },
+        //    pageSize: 2000,
+        //    limit: 'Infinity'
+        // };
     },
     _getFeatureConfig: function(releaseName, featureName){
 
@@ -368,6 +419,7 @@ Ext.define("CArABU.technicalservices.app.PortfolioReleaseTrackingBoard", {
                project: this.getContext().getProject()._ref,
                projectScopeDown: this.getContext().getProjectScopeDown()
             },
+           pageSize: 2000,
            limit: 'Infinity'
         };
     },
@@ -390,13 +442,13 @@ Ext.define("CArABU.technicalservices.app.PortfolioReleaseTrackingBoard", {
 
     },
     getShowStories: function(){
-      return this.down('#showStories').pressed;
+      return this.down('#showStories') && this.down('#showStories').pressed;
     },
     getShowDefects: function(){
-      return this.down('#showDefects').pressed;
+      return this.down('#showDefects') && this.down('#showDefects').pressed;
     },
     getShowDependencies: function(){
-      return this.down('#showDependencies').pressed;
+      return this.down('#showDependencies') && this.down('#showDependencies').pressed;
     },
     getUsePoints: function(){
        return this.getSetting('usePoints') == "true" || this.getSetting('usePoints') === true;
