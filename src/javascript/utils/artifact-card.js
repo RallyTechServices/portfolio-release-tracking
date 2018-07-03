@@ -49,6 +49,22 @@
       return {x: x, y: y}
 
   },
+  getHotSpot: function(){
+      return {
+         x: this.getX(),
+         y: this.getY(),
+         width: this.getWidth(),
+         height: this.getHeight()
+      };
+  },
+  showPopover: function(){
+     this.fireEvent('fieldclick','Item');
+  },
+  showDescription: function(e,t){
+     if (false){ //TODO: this is in hover range of the formattedid
+        this.fireEvent('fieldclick','Description');
+     }
+  },
   _buildHtml: function () {
       var html = [];
 
