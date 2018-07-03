@@ -135,6 +135,28 @@ Ext.define("CArABU.technicalservices.app.PortfolioReleaseTrackingBoard", {
          _.each(cs, function(c){
           var dep = c.getRecord().get('__dependency'),
               depParent = depHash[dep];
+          var hs = c.getHotSpot();
+          items.push({
+              type: 'rect',
+              width: hs.width,
+              height: hs.height,
+              x: hs.x+ xOffset,
+              y: hs.y + yOffset ,
+              fill: 'transparent',
+              border: 'transparent',
+              style: {
+                cursor: 'pointer'
+              },
+              listeners: {
+                 click: function(e,t){
+                    c.fireEvent('fieldclick','Item');
+                 },
+                 mouseover: function(e,t){
+                    c.fireEvent('fieldClick','Description');
+                 },
+                 scope: c
+              }
+          });
           if (dep && depParent){
                var p = c.getConnectorPoint(depParent.getX(), depParent.getY());
                 var p2 = depParent.getConnectorPoint(c.getX(),c.getY());
@@ -174,7 +196,12 @@ Ext.define("CArABU.technicalservices.app.PortfolioReleaseTrackingBoard", {
           margin: 10,
           height: board.getHeight(),
           width: board.getWidth(),
-          items: items
+          items: items,
+          listeners: {
+             click: function(evt){
+                console.log('canvase click',evt);
+             }
+          }
       });
       this.add(drawComponent);
 
