@@ -196,12 +196,7 @@ Ext.define("CArABU.technicalservices.app.PortfolioReleaseTrackingBoard", {
           margin: 10,
           height: board.getHeight(),
           width: board.getWidth(),
-          items: items,
-          listeners: {
-             click: function(evt){
-                console.log('canvase click',evt);
-             }
-          }
+          items: items
       });
       this.add(drawComponent);
 
