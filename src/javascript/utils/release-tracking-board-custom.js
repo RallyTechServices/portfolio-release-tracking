@@ -26,6 +26,7 @@ Ext.define("CArABU.technicalservices.portfolioreleasetracking.Board", {
       },
       columnConfig: {
         xtype: 'artifactboardcolumn',
+        autoLoadCardThreshold: 1000,
         columnHeaderConfig: {
           headerTpl: '<span class="iname">{Name}</span><tpl if="StartDate"><br/><span class="idates">{[Rally.util.DateTime.format(values.StartDate,"Y-m-d")]} - {[Rally.util.DateTime.format(values.EndDate,"Y-m-d")]}</span></tpl>'
         }
@@ -120,7 +121,7 @@ Ext.define("CArABU.technicalservices.portfolioreleasetracking.Board", {
     },
     _retrieveModels: function(success){
         this.models = [Ext.create('CArABU.technicalservices.portfolioreleasetracking.ArtifactModel')];
-        //TODO: fetch records here... 
+        //TODO: fetch records here...
         this.artifacts = this._buildArtifactRecords(this.results);
         this.onModelsRetrieved(success);
     },

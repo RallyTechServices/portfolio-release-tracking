@@ -7,7 +7,6 @@ Ext.define('CArABU.technicalservices.plugin.TrackingCardContentLeft', {
                if (!this.idTpl) {
                    this.idTpl = Ext.create('Rally.ui.renderer.template.FormattedIDTemplate');
                }
-
                return this.idTpl;
            },
 
@@ -16,12 +15,11 @@ Ext.define('CArABU.technicalservices.plugin.TrackingCardContentLeft', {
                    this.headerTpl = Ext.create('Ext.XTemplate', [
                        '<div class="left-header">',
                            '<div class="id" style="min-width: {idWidth}px">{formattedId}</div>',
-                           '<div class="dependency {dep}"></div>', //{depID}
+                           '<div class="dependency {dep} field-content dependency"></div>', //{depID}
                            '<div class="field-content ItemSummary">{summary}</div>',
                            '</span>',
                        '</div>']);
                }
-
                return this.headerTpl;
            }
        },
@@ -65,7 +63,6 @@ Ext.define('CArABU.technicalservices.plugin.TrackingCardContentLeft', {
                  data.formattedId = Rally.ui.cardboard.plugin.CardContentLeft.getIdTpl().apply(recordData);
                  return this.self.getHeaderTpl().apply(data);
              }
-
              return '';
          },
          _isDisplayableField: function(fieldName){

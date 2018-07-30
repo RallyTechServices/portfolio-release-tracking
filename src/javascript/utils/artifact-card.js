@@ -6,6 +6,7 @@
       this.mergeConfig(config);
       this.hidden = this.record.get('__isHidden') || false;
       this.callParent(arguments);
+
    },
 
    setupPlugins: function () {
@@ -14,7 +15,6 @@
           {ptype: 'artifactcardpopover'},
           {ptype: 'trackingcardcontentleft'}
       ];
-
       return _.uniq(plugins, 'ptype');
   },
 
@@ -58,6 +58,10 @@
       };
   },
   showPopover: function(){
+      this.getEl().on('mouseout', function(card){
+         card.fireEvent('mouseout');
+      }, this);
+
      this.fireEvent('fieldclick','Item');
   },
   showDescription: function(e,t){
