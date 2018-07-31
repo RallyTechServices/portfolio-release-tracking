@@ -91,7 +91,7 @@ Ext.define('CArABU.technicalservices.portfolioreleasetracking.ArtifactModel', {
            if (this.get('__childDependencies')){
               //This is a PI
               return [{
-                  property: 'Feature.ObjectID',  //TODO: FIX THIS to use the right name 
+                  property: 'Feature.ObjectID',  //TODO: FIX THIS to use the right name
                   value: this.get('__items')[0].ObjectID
               },{
                   property: 'DirectChildrenCount',
@@ -106,8 +106,6 @@ Ext.define('CArABU.technicalservices.portfolioreleasetracking.ArtifactModel', {
                  };
              });
              return Rally.data.wsapi.Filter.or(filters);
-
-
          },
          getItemModels: function(){
            var models = [];
@@ -121,7 +119,6 @@ Ext.define('CArABU.technicalservices.portfolioreleasetracking.ArtifactModel', {
            if (models.length == 0){ //This is portfolioitem and we want to return a story model
              models.push('HierarchicalRequirement');
            }
-
            return models;
          },
          getGroupName: function(){

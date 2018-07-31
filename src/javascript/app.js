@@ -108,6 +108,7 @@ Ext.define("CArABU.technicalservices.app.PortfolioReleaseTrackingBoard", {
         });
     },
     toggleDependencies: function(board){
+      this.logger.log('toggleDependencies', board);
       if (this.down('#dependencies')){
           this.down('#dependencies').destroy();
       }
@@ -115,6 +116,7 @@ Ext.define("CArABU.technicalservices.app.PortfolioReleaseTrackingBoard", {
          return;
       }
 
+      board = this.down('#trackingbboard');
       var coords = {};
       var boardX = board.getX(),
           boardY = board.getY(),
@@ -153,6 +155,9 @@ Ext.define("CArABU.technicalservices.app.PortfolioReleaseTrackingBoard", {
                  },
                  mouseover: function(e,t){
                     c.fireEvent('fieldClick','Description');
+                 },
+                 mouseout: function(e,t){
+                    c.fireEvent('mouseout');
                  },
                  scope: c
               }
@@ -229,8 +234,7 @@ Ext.define("CArABU.technicalservices.app.PortfolioReleaseTrackingBoard", {
           Deft.Promise.all(promises).then({
              success: function(results){
                 //var records = this._buildArtifactRecords(results, iterations, featureName);
-                results.unshift(records)
-                console.log('results',results);
+                results.unshift(records);
                 deferred.resolve(results);
              },
              failure: function(msg){
@@ -379,7 +383,7 @@ Ext.define("CArABU.technicalservices.app.PortfolioReleaseTrackingBoard", {
           return arr;
       },[]);
       var filters = _.map(features, function(f){
-         console.log('feature project', f.get('Project').ObjectID);
+
          return Rally.data.wsapi.Filter.and([{
            property: featureName + '.ObjectID',
            value: f.get('ObjectID')
