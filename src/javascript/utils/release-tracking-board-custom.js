@@ -18,6 +18,7 @@ Ext.define("CArABU.technicalservices.portfolioreleasetracking.Board", {
       readOnly: true,
       attribute: '__dateBucket',
       rowConfig: {
+        collapsible: false,
         field: "Project",
         fieldDef: {readOnly: true, name: 'Project'},
         headerConfig: {
@@ -59,7 +60,6 @@ Ext.define("CArABU.technicalservices.portfolioreleasetracking.Board", {
       } else {
           row = rows[0] || this._createDefaultRow();
       }
-
       return row;
     },
 
