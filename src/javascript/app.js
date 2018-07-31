@@ -109,6 +109,7 @@ Ext.define("CArABU.technicalservices.app.PortfolioReleaseTrackingBoard", {
     },
     toggleDependencies: function(board){
       this.logger.log('toggleDependencies', board);
+
       if (this.down('#dependencies')){
           this.down('#dependencies').destroy();
       }
@@ -116,7 +117,12 @@ Ext.define("CArABU.technicalservices.app.PortfolioReleaseTrackingBoard", {
          return;
       }
 
+      if (!this.down('#trackingboard')){
+         return;
+      }
+
       board = this.down('#trackingbboard');
+
       var coords = {};
       var boardX = board.getX(),
           boardY = board.getY(),
