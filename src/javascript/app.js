@@ -117,11 +117,11 @@ Ext.define("CArABU.technicalservices.app.PortfolioReleaseTrackingBoard", {
          return;
       }
 
-      if (!this.down('#trackingboard')){
-         return;
-      }
+      // if (!this.down('#trackingboard')){
+      //    return;
+      // }
 
-      board = this.down('#trackingbboard');
+      // board = this.down('#trackingbboard');
 
       var coords = {};
       var boardX = board.getX(),
