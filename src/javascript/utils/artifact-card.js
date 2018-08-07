@@ -7,6 +7,17 @@
       this.hidden = this.record.get('__isHidden') || false;
       this.callParent(arguments);
 
+
+   },
+
+   addDependentCards: function(card){
+      if (!this.dependentCards){
+         this.dependentCards = [];
+      }
+      this.dependentCards.push(card);
+   },
+   getDependentCards: function(){
+       return this.dependentCards || [];
    },
 
    setupPlugins: function () {
@@ -59,15 +70,40 @@
   },
   showPopover: function(){
       this.getEl().on('mouseout', function(card){
-         card.fireEvent('mouseout');
+         card.fireEvent('mouseout', this);
       }, this);
 
      this.fireEvent('fieldclick','Item');
   },
-  showDescription: function(e,t){
-     if (false){ //TODO: this is in hover range of the formattedid
-        this.fireEvent('fieldclick','Description');
-     }
+  getDependencyHotSpot: function(){
+    var x = this.getEl().down('.dependency');
+    // this.on('mouseout', function(){
+    //
+    // }, this);
+    return {
+       x: x.getX(),
+       y: x.getY(),
+       width: x.getWidth(),
+       height: x.getHeight()
+    };
+  },
+  getItemHotSpot: function(){
+    var x = this.getEl().down('.ItemSummary');
+    return {
+       x: x.getX(),
+       y: x.getY(),
+       width: x.getWidth(),
+       height: x.getHeight()
+    };
+  },
+  getDescriptionHotSpot: function(){
+    var x = this.getEl().down('.formatted-id-template');
+    return {
+       x: x.getX(),
+       y: x.getY(),
+       width: x.getWidth(),
+       height: x.getHeight()
+    };
   },
   _buildHtml: function () {
       var html = [];
