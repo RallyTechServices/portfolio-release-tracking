@@ -12,6 +12,7 @@ Ext.define("CArABU.technicalservices.app.PortfolioReleaseTrackingBoard", {
          usePoints: true
        }
     },
+    style: 'z-index:0',
     featureModel: "PortfolioItem/Feature",
 
     launch: function() {
@@ -30,10 +31,7 @@ Ext.define("CArABU.technicalservices.app.PortfolioReleaseTrackingBoard", {
 
     },
     _resizeDependents: function(){
-       if (this.getShowDependencies() && this.down('#trackingbboard')){
-          this.toggleDependencies(this.down('#trackingbboard'))
-       }
-
+          this.toggleDependencies(this.getShowDependencies())
     },
     _validate: function(){
         if (!this.getContext().getTimeboxScope() || this.getContext().getTimeboxScope().getType() != 'release'){
@@ -107,7 +105,7 @@ Ext.define("CArABU.technicalservices.app.PortfolioReleaseTrackingBoard", {
            html: Ext.String.format('<div class="no-data-container"><div class="secondary-message">{0}</div></div>',message)
         });
     },
-    toggleDependencies: function(board){
+    toggleDependencies2: function(board){
       this.logger.log('toggleDependencies', board);
 
       if (this.down('#dependencies')){
@@ -200,7 +198,7 @@ Ext.define("CArABU.technicalservices.app.PortfolioReleaseTrackingBoard", {
 
 
       var drawComponent = Ext.create('Ext.draw.Component', {
-          style: Ext.String.format('position:absolute; top:{0}px; left:{1}px;z-index:auto', boardY,boardX),
+          style: Ext.String.format('position:absolute; top:{0}px; left:{1}px;z-index:1', boardY,boardX),
           itemId: 'dependencies',
           id: 'dep',
           viewBox: false,
@@ -271,6 +269,7 @@ Ext.define("CArABU.technicalservices.app.PortfolioReleaseTrackingBoard", {
       if (board){
         board.destroy();
       }
+      this.dependencyMap = null;
 
       var b = this.add({
          xtype: 'portfolioreleasetrackingboard',
@@ -285,19 +284,57 @@ Ext.define("CArABU.technicalservices.app.PortfolioReleaseTrackingBoard", {
          featureName: this.getPortfolioItemName(),
          context: this.getContext(),
          cardConfig: {
-            usePoints: this.getUsePoints()
+            usePoints: this.getUsePoints(),
+            listeners: {
+               showdependency: this._showCardDependency,
+               scope: this
+            }
          }
       });
 
-      if (this.getShowDependencies()){
-         b.on('load', this.toggleDependencies, this);
-      }
+      b.on('load', this._buildDependencyMap, this);
+
     },
+    _showCardDependency: function(card){
+        this.logger.log('card', card);
+       this.toggleDependencies(true, card);
+    },
+
+    _buildDependencyMap: function(board){
+        this.dependencyMap = Ext.create('CArABU.technicalservices.portfolioreleasetracking.DependencyMap',{
+            board: board
+        });
+        this.toggleDependencies(this.getShowDependencies());
+
+    },
+    toggleDependencies: function(showDependencies, card){
+      this.logger.log('toggleDependencies', showDependencies);
+
+      if (this.down('#dependencies')){
+          this.down('#dependencies').destroy();
+      }
+
+      var board = this.down('#trackingboard') || this.down('portfolioreleasetrackingboard');
+      this.logger.log('board', board);
+      if (!showDependencies || !this.down('portfolioreleasetrackingboard') || !this.dependencyMap){
+          this.logger.log('Show dependencies == false OR there is no board rendered.')
+         return;
+      }
+
+      var drawComponent = this.dependencyMap.getDependencyCanvas(board, card);
+      if (drawComponent){
+        this.add(drawComponent);
+      }
+
+
+    },
+
     _addToggles: function(){
         this.add({
           xtype: 'container',
           layout: 'hbox',
           margin: 5,
+          style: 'z-index:10!important;',
           items: [{
             xtype: 'button',
             iconCls: 'icon-story',
@@ -467,9 +504,11 @@ Ext.define("CArABU.technicalservices.app.PortfolioReleaseTrackingBoard", {
           btn.addCls('secondary');
         }
 
-        this._buildBoard();
+        //this._buildBoard();
         if (btn.itemId == "showDependencies"){
            this.toggleDependencies(pressed);
+        } else {
+           this._buildBoard();
         }
 
     },
