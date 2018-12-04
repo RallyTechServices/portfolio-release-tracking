@@ -215,6 +215,10 @@ Ext.define("CArABU.technicalservices.portfolioreleasetracking.Board", {
             var models = _.map(results[0], function(rec){
               var m = Ext.create('CArABU.technicalservices.portfolioreleasetracking.ArtifactModel',{
                     __dateBucket: this._getFeatureDateBucket(rec,iterations),
+                    __doneStates: this.doneStates,
+                    __riskField: this.atRiskField,
+                    __atRiskValue: this.atRiskValue,
+                    __willNotCompleteValue: this.willNotCompleteValue,
                     id: rec.getId()
                 });
                 featureHash[rec.get('FormattedID')] = m;

@@ -9,7 +9,11 @@ Ext.define("CArABU.technicalservices.app.PortfolioReleaseTrackingBoard", {
     },
     config: {
        defaultSettings: {
-         usePoints: true
+         usePoints: true,
+         atRiskField: "c_PIFeatureRiskLevel",
+         doneStates: ["Deployed","Released to Customers"],
+         atRiskValue: "At risk for PI",
+         willNotCompleteValue: "Will not complete in PI"
        }
     },
     style: 'z-index:0',
@@ -284,6 +288,10 @@ Ext.define("CArABU.technicalservices.app.PortfolioReleaseTrackingBoard", {
          iterations: this.iterations,
          featureName: this.getPortfolioItemName(),
          context: this.getContext(),
+         doneStates: this.getSetting('doneStates'),
+         atRiskField: this.getSetting('atRiskField'),
+         atRiskValue: this.getSetting('atRiskValue'),
+         willNotCompleteValue: this.getSetting('willNotCompleteValue'),
          cardConfig: {
             usePoints: this.getUsePoints(),
             listeners: {
@@ -512,7 +520,11 @@ Ext.define("CArABU.technicalservices.app.PortfolioReleaseTrackingBoard", {
     },
 
     _getFeatureConfig: function(releaseName, featureName){
-        var fields = ['DisplayColor','Name','FormattedID','PlannedEndDate','Project','Release','LeafStoryPlanEstimateTotal','AcceptedLeafStoryPlanEstimateTotal','LeafStoryCount','AcceptedLeafStoryCount','Parent'];
+        var atRiskField = this.getSetting('atRiskField') || null;
+        var fields = ['DisplayColor','Name','FormattedID','PlannedEndDate','Project','Release','LeafStoryPlanEstimateTotal','AcceptedLeafStoryPlanEstimateTotal','LeafStoryCount','AcceptedLeafStoryCount','Parent','State'];
+        if (atRiskField){
+          fields.push(atRiskField);
+        }
 
         return {
            model: "PortfolioItem/" + featureName,

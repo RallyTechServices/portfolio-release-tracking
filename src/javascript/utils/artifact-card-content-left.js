@@ -14,8 +14,9 @@ Ext.define('CArABU.technicalservices.plugin.TrackingCardContentLeft', {
                if (!this.headerTpl) {
                    this.headerTpl = Ext.create('Ext.XTemplate', [
                        '<div class="left-header">',
-                           '<div class="id" style="min-width: {idWidth}px">{formattedId}</div>',
+                        '<div class="id" style="min-width: {idWidth}px">{formattedId}</div>',
                            '<div class="dependency {dep} field-content dependency"></div>', //{depID}
+                           '<div class="itemstate {state}"></div>',
                            '<div class="field-content ItemSummary">{summary}</div>',
                            '</span>',
                        '</div>']);
@@ -60,6 +61,23 @@ Ext.define('CArABU.technicalservices.plugin.TrackingCardContentLeft', {
                  if (childDeps){
                     data.dep = "type-indicator picto icon-predecessor";
                  }
+
+                 //KMC - added logic to show status indicator for done states and at risk
+                 data.state = "";
+                 var status = record.getStatus();
+                 console.log('status', status);
+                 switch(status){
+                   case "done":
+                      data.state = "icon-ok done";
+                      break;
+                   case "atrisk":
+                    data.state = "icon-warning atrisk";
+                    break;
+                  case "willnotcomplete":
+                    data.state = "icon-minus willnotcomplete";
+                    break;
+                 }
+
                  data.formattedId = Rally.ui.cardboard.plugin.CardContentLeft.getIdTpl().apply(recordData);
                  return this.self.getHeaderTpl().apply(data);
              }
