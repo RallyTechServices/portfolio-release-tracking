@@ -65,7 +65,7 @@ Ext.define('CArABU.technicalservices.plugin.TrackingCardContentLeft', {
                  //KMC - added logic to show status indicator for done states and at risk
                  data.state = "";
                  var status = record.getStatus();
-                 console.log('status', status);
+
                  switch(status){
                    case "done":
                       data.state = "icon-ok done";

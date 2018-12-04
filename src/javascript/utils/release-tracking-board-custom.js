@@ -203,7 +203,6 @@ Ext.define("CArABU.technicalservices.portfolioreleasetracking.Board", {
 
         },
         _buildArtifactRecords: function(results){
-
             var featureName = this.featureName,
                 showDefects = this.showDefects,
                 showStories = this.showStories,
@@ -230,8 +229,8 @@ Ext.define("CArABU.technicalservices.portfolioreleasetracking.Board", {
                 var dependencies = results[1];
                 var depModels = this._groupDependencies(dependencies, featureName, featureHash);
                 _.each(depModels, function(d){
-                    if (featureHash[d.get('__dependency')]){
-                        featureHash[d.get('__dependency')].addChildDependency(d.get('FormattedID'));
+                    if (featureHash[d.get('__childDependency')]){
+                        featureHash[d.get('__childDependency')].addChildDependency(d.get('FormattedID'));
                     }
                 });
                 models = models.concat(depModels);
@@ -312,7 +311,7 @@ Ext.define("CArABU.technicalservices.portfolioreleasetracking.Board", {
                            Project: project,
                            __dateBucket: db,
                            id: r.getId(),
-                           __dependency: dependency
+                           __childDependency: dependency
                          });
                          groupedModels.push(hash[project][iteration][feature.FormattedID]);
                    }

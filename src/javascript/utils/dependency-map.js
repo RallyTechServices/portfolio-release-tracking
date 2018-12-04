@@ -25,7 +25,7 @@ Ext.define('CArABU.technicalservices.portfolioreleasetracking.DependencyMap', {
       var cards = [];
       _.each(board.getCards(), function(cs){
          _.each(cs, function(c){
-          var dep = c.getRecord().get('__dependency'),
+          var dep = c.getRecord().get('__childDependency'),
               depParent = dependencyMap[dep];
           if (depParent){
             c.addDependentCards(depParent);
@@ -152,7 +152,7 @@ Ext.define('CArABU.technicalservices.portfolioreleasetracking.DependencyMap', {
 
           return Ext.create('Ext.draw.Component', {
               style: Ext.String.format('position:relative; top:{0}px; left:{1}px;', -board.getHeight(),-boardX),
-              itemId: 'dependencies',
+              itemId: 'childDependencies',
               id: 'dep',
               viewBox: false,
               height: board.getHeight(),

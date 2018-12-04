@@ -110,7 +110,7 @@ Ext.define("CArABU.technicalservices.app.PortfolioReleaseTrackingBoard", {
         });
     },
     toggleDependencies2: function(board){
-      this.logger.log('toggleDependencies', board);
+      this.logger.log('toggleDependencies2', board);
 
       if (this.down('#dependencies')){
           this.down('#dependencies').destroy();
@@ -143,7 +143,7 @@ Ext.define("CArABU.technicalservices.app.PortfolioReleaseTrackingBoard", {
 
       _.each(board.getCards(), function(cs){
          _.each(cs, function(c){
-          var dep = c.getRecord().get('__dependency'),
+          var dep = c.getRecord().get('__childDependency'),
               depParent = depHash[dep];
           var hs = c.getHotSpot();
           items.push({
@@ -305,8 +305,8 @@ Ext.define("CArABU.technicalservices.app.PortfolioReleaseTrackingBoard", {
 
     },
     _showCardDependency: function(card){
-        this.logger.log('card', card);
-       this.toggleDependencies(true, card);
+      this.logger.log('card', card);
+      this.toggleDependencies(true, card);
     },
 
     _buildDependencyMap: function(board){
@@ -334,8 +334,6 @@ Ext.define("CArABU.technicalservices.app.PortfolioReleaseTrackingBoard", {
       if (drawComponent){
         this.add(drawComponent);
       }
-
-
     },
 
     _addToggles: function(){
@@ -427,8 +425,6 @@ Ext.define("CArABU.technicalservices.app.PortfolioReleaseTrackingBoard", {
     },
 
     _getDirectDependentFeatureConfig: function(releaseName, featureName, features){
-      console.log('-- ', features);
-
       var fields = ['Name','FormattedID','Project','Release','PlannedEndDate',featureName];
       var uniqueProjects = _.reduce(features, function(arr,f){
           if (!_.contains(arr, f.get('Project').ObjectID)){

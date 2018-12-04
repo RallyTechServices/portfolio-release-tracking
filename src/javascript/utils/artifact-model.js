@@ -39,12 +39,15 @@ Ext.define('CArABU.technicalservices.portfolioreleasetracking.ArtifactModel', {
           name: '__acceptedPoints',
           defaultValue: 0
         },{
-          name: '__dependency',
+          name: '__childDependency',
           defaultValue: null
         },{
            name: '__childDependencies',
            defaultValue: false
-        },{
+       },{
+           name: '__peerDependencies',
+           defaultValue: false
+       },{
           name: '__dateBucket',
           defaultValue:  null
         },{
@@ -154,10 +157,15 @@ Ext.define('CArABU.technicalservices.portfolioreleasetracking.ArtifactModel', {
              if (_.find(this.get('__items'), {_type: 'defect'})){
                  name.push("DE");
              }
-             if (this.get('__dependency')){
+             if (this.get('__childDependency')){
                 return name.join('/');
              }
              return "Orphaned " + name.join('/');
+         },
+         addPeerDependency: function(id){
+             var peerDeps = this.get('__peerDependencies') || [];
+             peerDeps.push(id);
+             this.set('__peerDependencies',peerDeps);
          },
          addChildDependency: function(id){
              var childDeps = this.get('__childDependencies') || [];
@@ -173,7 +181,7 @@ Ext.define('CArABU.technicalservices.portfolioreleasetracking.ArtifactModel', {
             }
 
             var risk = this.get('__risk') || null;
-            
+
             if (risk && risk === this.get('__atRiskValue')){
                return "atrisk";
             }
@@ -182,8 +190,14 @@ Ext.define('CArABU.technicalservices.portfolioreleasetracking.ArtifactModel', {
             }
             return null;
          },
-         hasDependencies: function(){
+         _hasChildDependencies: function() {
              return this.get('__childDependencies') && this.get('__childDependencies').length > 0;
+         },
+         _hasPeerDependencies: function() {
+             return this.get('__peerDependencies') && this.get('__peerDependencies').length > 0;
+         },
+         hasDependencies: function(){
+             return this._hasChildDependencies() || this._hasPeerDependencies();
          },
          _setTotalCount: function(items){
              if (this.get('__groupedItem')){
