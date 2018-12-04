@@ -11,7 +11,8 @@ An alternate release tracking board with the following differences from the Port
 *  If a Level 1 Portfolio Item does not have a Planned End Date, then it will show up in the Unscheduled column
 *  Names of the features are included on the cards
 *  Board is read only and cards cannot be dragged across projects or iterations
-*  Dependencies are defined as stories that belong to features that are not in the same project as their parent feature.  No story or feature predecessors or successors are shown in this app.  
+*  Child Dependencies are defined as stories that belong to features that are not in the same project as their parent feature.  No story predecessors or successors are shown in this app. These are shown as red.
+*  Peer Dependencies are defined as features that are manually set to have dependency relationshiops (predecessor/successor) with features on the board.  These are shown as blue.  (This set currently toggles with the child dependencies)  
 
 Dataset for this app is the following:
 * All Features associated explicitly with the currently selected release within the current project scope.  This association is determined by comparing the Release Name only (not Name + ReleaseStartDate + ReleaseEndDate);
