@@ -38,6 +38,31 @@
   background-color: white;
 }
 
+.itemstate {
+  font-size: 14px!important;
+  font-weight: bold;
+  font-family: NotoSans;
+  display: block;
+  padding: 3px;
+  width: 16px;
+  height: 16px;
+  cursor: pointer;
+  border-radius: 50%;
+}
+
+.done {
+  color: green;
+  text-align: center;
+}
+
+.atrisk {
+  color: #FAD200;
+}
+
+.willnotcomplete {
+  color: #EE1C25;
+}
+
 .dependency {
   font-size: 10px;
   font-weight: bold;
