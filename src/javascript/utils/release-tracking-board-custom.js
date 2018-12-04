@@ -55,12 +55,39 @@ Ext.define("CArABU.technicalservices.portfolioreleasetracking.Board", {
           }) ||
           this._createRow({
               showHeader: true,
-              value: record.get(this.rowConfig.field)
+              value: record.get(this.rowConfig.field),
+              collapsible: this.rowConfig.collapsible || false
           }, true);
       } else {
           row = rows[0] || this._createDefaultRow();
       }
       return row;
+    },
+
+    // override because we don't seem to be setting collapsible above
+    _renderColumns: function () {
+        if (this.columnDefinitions.length > 0) {
+            this._calculateMinWidth();
+
+            this.getEl().update(this._getColumnContainerHtml());
+
+            this.rowDefinitions = [];
+            if(this._hasValidRowField()) {
+                _.each(this.rowConfig.values, function(rowValue) {
+                    this._createRow({
+                        showHeader: true,
+                        value: rowValue,
+                        collapsible: this.rowConfig.collapsible || false
+                    });
+                }, this);
+            } else {
+                this._createRow({showHeader: false, isDefault: true});
+            }
+
+            this._addColumnsToDom();
+
+            this.fireEvent('aftercolumnrender', this);
+        }
     },
 
     _getColumnRecords: function(records, iteration){
