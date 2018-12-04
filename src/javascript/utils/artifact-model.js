@@ -9,6 +9,12 @@ Ext.define('CArABU.technicalservices.portfolioreleasetracking.ArtifactModel', {
           name: 'Name',
           defaultValue: ""
         },{
+          name: 'State',
+          defaultValue: ""
+        },{
+          name: '__risk',
+          defaultValue: ""
+        },{
           name: 'DisplayColor',
           defaultValue: ""
         },{
@@ -41,6 +47,18 @@ Ext.define('CArABU.technicalservices.portfolioreleasetracking.ArtifactModel', {
         },{
           name: '__dateBucket',
           defaultValue:  null
+        },{
+          name: '__doneStates',
+          defaultValue: []
+        },{
+          name: '__riskField',
+          defaultValue: ""
+        },{
+          name: '__atRiskValue',
+          defaultValue: ""
+        },{
+          name: '__willNotCompleteValue',
+          defaultValue: ""
         }],
          isSearch: function(){
             return false;
@@ -76,6 +94,13 @@ Ext.define('CArABU.technicalservices.portfolioreleasetracking.ArtifactModel', {
                 this.set('Name',item.Name);
                 this.set('FormattedID', item.FormattedID);
                 this.set('DisplayColor', item.DisplayColor);
+                if (item.State){
+                  this.set('State', item.State.Name);
+                }
+                var riskField = this.get('__riskField');
+                if (riskField && item[riskField]){
+                   this.set('__risk', item[riskField]);
+                }
             } else {
 
             }
@@ -138,6 +163,24 @@ Ext.define('CArABU.technicalservices.portfolioreleasetracking.ArtifactModel', {
              var childDeps = this.get('__childDependencies') || [];
              childDeps.push(id);
              this.set('__childDependencies',childDeps);
+         },
+         getStatus: function(){
+            var state = this.get('State');
+            if (state){
+                if (_.contains(this.get('__doneStates'), state)){
+                  return "done";
+                }
+            }
+
+            var risk = this.get('__risk') || null;
+            
+            if (risk && risk === this.get('__atRiskValue')){
+               return "atrisk";
+            }
+            if (risk && risk === this.get('__willNotCompleteValue')){
+               return "willnotcomplete";
+            }
+            return null;
          },
          hasDependencies: function(){
              return this.get('__childDependencies') && this.get('__childDependencies').length > 0;
