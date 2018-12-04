@@ -231,6 +231,7 @@ Ext.define("CArABU.technicalservices.app.PortfolioReleaseTrackingBoard", {
           var promises = [
             //this._fetchWsapiRecords(this._getFeatureConfig(releaseName, featureName)),
             this._fetchWsapiRecords(this._getDependentStoryConfig(releaseName, featureName, records)),
+            //this._fetchWsapiRecords(this._getDirectDependentFeatureConfig(releaseName, featureName, records)),
             this._fetchWsapiRecords(this._getOrphanStoryConfig(releaseName, featureName)),
             this._fetchWsapiRecords(this._getOrphanDefectConfig(releaseName))
           ];
@@ -416,8 +417,44 @@ Ext.define("CArABU.technicalservices.app.PortfolioReleaseTrackingBoard", {
        };
 
     },
-    _getDependentStoryConfig: function(releaseName, featureName, features){
 
+    _getDirectDependentFeatureConfig: function(releaseName, featureName, features){
+      console.log('-- ', features);
+
+      var fields = ['Name','FormattedID','Project','Release','PlannedEndDate',featureName];
+      var uniqueProjects = _.reduce(features, function(arr,f){
+          if (!_.contains(arr, f.get('Project').ObjectID)){
+            arr.push(f.get('Project').ObjectID);
+          }
+          return arr;
+      },[]);
+      var filters = _.map(features, function(f){
+
+         return Rally.data.wsapi.Filter.and([{
+           property: 'Predecessors.ObjectID',
+           value: f.get('ObjectID')
+         },{
+           property: 'Project.ObjectID',
+           operator: '!=',
+           value: f.get('Project').ObjectID
+         }]);
+      });
+      filters = Rally.data.wsapi.Filter.or(filters);
+
+      return {
+         model: "PortfolioItem/" + featureName,
+         fetch: fields,
+         filters: filters,
+         enablePostGet: true,
+         context: {
+            project: null
+         },
+         pageSize: 2000,
+         limit: 'Infinity'
+      };
+    },
+
+    _getDependentStoryConfig: function(releaseName, featureName, features){
       var fields = ['Name','FormattedID','Project','Parent','Release','PlanEstimate','AcceptedDate','Iteration','EndDate',featureName];
       var uniqueProjects = _.reduce(features, function(arr,f){
           if (!_.contains(arr, f.get('Project').ObjectID)){
@@ -473,8 +510,8 @@ Ext.define("CArABU.technicalservices.app.PortfolioReleaseTrackingBoard", {
         //    limit: 'Infinity'
         // };
     },
-    _getFeatureConfig: function(releaseName, featureName){
 
+    _getFeatureConfig: function(releaseName, featureName){
         var fields = ['DisplayColor','Name','FormattedID','PlannedEndDate','Project','Release','LeafStoryPlanEstimateTotal','AcceptedLeafStoryPlanEstimateTotal','LeafStoryCount','AcceptedLeafStoryCount','Parent'];
 
         return {
