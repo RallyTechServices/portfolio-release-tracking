@@ -35,7 +35,7 @@ Ext.define("CArABU.technicalservices.app.PortfolioReleaseTrackingBoard", {
 
     },
     _resizeDependents: function(){
-          this.toggleDependencies(this.getShowDependencies())
+          this.toggleDependencies(this.getShowChildDependencies())
     },
     _validate: function(){
         if (!this.getContext().getTimeboxScope() || this.getContext().getTimeboxScope().getType() != 'release'){
@@ -217,13 +217,52 @@ Ext.define("CArABU.technicalservices.app.PortfolioReleaseTrackingBoard", {
     _initializeApp: function(iterations){
         this._addToggles();
         this._fetchRecords(iterations).then({
-           success: function(results){
-                this._buildBoard(iterations, results);
-           },
-           failure: this._showErrorNotification,
-           scope: this
+          success: function(results){
+            if ( this.getShowPeerDependencies()) {
+              var features = results[0];
+              this._fetchPeerDependencies(features).then({
+                  success: function(updated_results) {
+                    this._buildBoard(iterations, results);
+                  },
+                  failure: this._showErrorNotification,
+                  scope: this
+              });
+            } else {
+              this._buildBoard(iterations, results);
+            }
+          },
+          failure: this._showErrorNotification,
+          scope: this
         });
     },
+    _fetchPeerDependencies: function(features){
+        var deferred = Ext.create('Deft.Deferred');
+
+        var releaseName = this.getContext().getTimeboxScope().getRecord().get('Name'),
+          featureName = this.getPortfolioItemName();
+
+        // we have to cycle through the features one at a time to associate properly
+        var promises = _.map(features, function(feature){
+             return function() {
+                 return this._fetchWsapiRecords(this._getPeerDependentFeatureConfig(releaseName, featureName, feature)); }
+        },this);
+        Deft.Chain.sequence(promises,this).then({
+            success: function(results) {
+                _.each(features, function(feature,idx){
+                    feature.set('__peerDependencies',_.map(results[idx], function(result) {
+                        return result.get('FormattedID');
+                    }));
+                });
+                deferred.resolve(features);
+            },
+            failure: function(msg){
+                deferred.reject(msg);
+            },
+            scope: this
+        });
+        return deferred.promise;
+    },
+
     _fetchRecords: function(iterations){
       var deferred = Ext.create('Deft.Deferred');
 
@@ -283,7 +322,7 @@ Ext.define("CArABU.technicalservices.app.PortfolioReleaseTrackingBoard", {
          usePoints: this.getUsePoints(),
          showStories: this.getShowStories(),
          showDefects: this.getShowDefects(),
-         showDependencies: this.getShowDependencies(),
+         showDependencies: this.getShowChildDependencies(),
          release: this.getContext().getTimeboxScope().getRecord().getData(),
          iterations: this.iterations,
          featureName: this.getPortfolioItemName(),
@@ -313,14 +352,14 @@ Ext.define("CArABU.technicalservices.app.PortfolioReleaseTrackingBoard", {
         this.dependencyMap = Ext.create('CArABU.technicalservices.portfolioreleasetracking.DependencyMap',{
             board: board
         });
-        this.toggleDependencies(this.getShowDependencies());
+        this.toggleDependencies(this.getShowChildDependencies());
 
     },
     toggleDependencies: function(showDependencies, card){
       this.logger.log('toggleDependencies', showDependencies);
 
-      if (this.down('#dependencies')){
-          this.down('#dependencies').destroy();
+      if (this.down('#childDependencies')){
+          this.down('#childDependencies').destroy();
       }
 
       var board = this.down('#trackingboard') || this.down('portfolioreleasetrackingboard');
@@ -365,7 +404,7 @@ Ext.define("CArABU.technicalservices.app.PortfolioReleaseTrackingBoard", {
           },{
             xtype: 'button',
             iconCls: 'icon-predecessor',
-            itemId: 'showDependencies',
+            itemId: 'showChildDependencies',
             cls: 'primary rly-small',
             margin: 5,
             pressed: true,
@@ -515,6 +554,27 @@ Ext.define("CArABU.technicalservices.app.PortfolioReleaseTrackingBoard", {
         // };
     },
 
+    _getPeerDependentFeatureConfig: function(releaseName, featureName, coreFeature) {
+        var fields = ['DisplayColor','Name','FormattedID','PlannedEndDate','Project','Release','LeafStoryPlanEstimateTotal','AcceptedLeafStoryPlanEstimateTotal','LeafStoryCount','AcceptedLeafStoryCount','Parent','State'];
+        return {
+          model: "PortfolioItem/" + featureName,
+          fetch: fields,
+          filters: [{
+            property: "Release.Name",
+            value: releaseName
+          },{
+            property: "Predecessors.ObjectID",
+            value: coreFeature.get('ObjectID')
+          }],
+          context: {
+            project: this.getContext().getProject()._ref,
+            projectScopeDown: this.getContext().getProjectScopeDown()
+          },
+          pageSize: 2000,
+          limit: 'Infinity'
+        };
+    },
+
     _getFeatureConfig: function(releaseName, featureName){
         var atRiskField = this.getSetting('atRiskField') || null;
         var fields = ['DisplayColor','Name','FormattedID','PlannedEndDate','Project','Release','LeafStoryPlanEstimateTotal','AcceptedLeafStoryPlanEstimateTotal','LeafStoryCount','AcceptedLeafStoryCount','Parent','State'];
@@ -550,7 +610,7 @@ Ext.define("CArABU.technicalservices.app.PortfolioReleaseTrackingBoard", {
         }
 
         //this._buildBoard();
-        if (btn.itemId == "showDependencies"){
+        if (btn.itemId == "showChildDependencies"){
            this.toggleDependencies(pressed);
         } else {
            this._buildBoard();
@@ -563,8 +623,12 @@ Ext.define("CArABU.technicalservices.app.PortfolioReleaseTrackingBoard", {
     getShowDefects: function(){
       return this.down('#showDefects') && this.down('#showDefects').pressed;
     },
-    getShowDependencies: function(){
-      return this.down('#showDependencies') && this.down('#showDependencies').pressed;
+    getShowPeerDependencies: function(){
+        // TODO: for now just tying them together
+      return this.down('#showChildDependencies') && this.down('#showChildDependencies').pressed;
+    },
+    getShowChildDependencies: function(){
+      return this.down('#showChildDependencies') && this.down('#showChildDependencies').pressed;
     },
     getUsePoints: function(){
        return this.getSetting('usePoints') == "true" || this.getSetting('usePoints') === true;

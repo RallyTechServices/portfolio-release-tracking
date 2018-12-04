@@ -113,6 +113,7 @@ Ext.define('CArABU.technicalservices.portfolioreleasetracking.ArtifactModel', {
             this.set('__acceptedPoints', this._setAcceptedPoints(items));
             this.set('Project', item.Project.Name);
             this.set('__items', items);
+            this.set('__peerDependencies', item.__peerDependencies);
          },
          getItemFilters: function(){
 

@@ -16,8 +16,20 @@
       }
       this.dependentCards.push(card);
    },
+
    getDependentCards: function(){
        return this.dependentCards || [];
+   },
+
+   addPeerDependentCards: function(card){
+      if (!this.peerDependentCards){
+         this.peerDependentCards = [];
+      }
+      this.peerDependentCards.push(card);
+   },
+
+   getPeerDependentCards: function(){
+       return this.peerDependentCards || [];
    },
 
    setupPlugins: function () {

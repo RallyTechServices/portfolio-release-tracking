@@ -31,6 +31,16 @@ Ext.define('CArABU.technicalservices.portfolioreleasetracking.DependencyMap', {
             c.addDependentCards(depParent);
             depParent.addDependentCards(c);
           }
+          _.each(cs, function(c){
+              var depList = c.getRecord().get('__peerDependencies');
+              _.each(depList, function(dep){
+                  var peer = dependencyMap[dep];
+                  if ( peer ) {
+                      c.addPeerDependentCards(peer);
+                      peer.addPeerDependentCards(c);
+                  }
+              });
+          });
           cards.push(c)
 
         }, this);
@@ -49,37 +59,62 @@ Ext.define('CArABU.technicalservices.portfolioreleasetracking.DependencyMap', {
         items = [];
 
     _.each(cards, function(c){
-     var p1x = c.getX(), p1y = c.getY();
+        var p1x = c.getX(), p1y = c.getY();
 
-     _.each(c.getDependentCards(), function(dc){
-         var p1 = c.getConnectorPoint(dc.getX(), dc.getY()),
-              p2 = dc.getConnectorPoint(p1x,p1y);
+        _.each(c.getPeerDependentCards(), function(dc){
+            var p1 = c.getConnectorPoint(dc.getX(), dc.getY()),
+                p2 = dc.getConnectorPoint(p1x,p1y);
 
-              items.push({
+            items.push({
+                type: "circle",
+                fill: 'blue',
+                radius: 5,
+                x: p1.x,
+                y: p1.y + yOffset
+            });
+            items.push({
+                type: "circle",
+                fill: 'blue',
+                radius: 5,
+                x: p2.x,
+                y: p2.y + yOffset
+            });
+            items.push({
+                type: "path",
+                path: Ext.String.format("M{0} {1} L {2} {3}",p1.x,p1.y+ yOffset,p2.x,p2.y+ yOffset),
+                fill: "transparent",
+                stroke: "blue",
+                "stroke-width": "1"
+            });
+        });
+
+        _.each(c.getDependentCards(), function(dc){
+            var p1 = c.getConnectorPoint(dc.getX(), dc.getY()),
+                p2 = dc.getConnectorPoint(p1x,p1y);
+
+            items.push({
                 type: "circle",
                 fill: 'red',
                 radius: 5,
-               x: p1.x,
-               y: p1.y + yOffset
-
-              });
-              items.push({
+                x: p1.x,
+                y: p1.y + yOffset
+            });
+            items.push({
                 type: "circle",
                 fill: 'red',
                 radius: 5,
-               x: p2.x,
-               y: p2.y + yOffset
-
-              });
-              items.push({
+                x: p2.x,
+                y: p2.y + yOffset
+            });
+            items.push({
                 type: "path",
                 path: Ext.String.format("M{0} {1} L {2} {3}",p1.x,p1.y+ yOffset,p2.x,p2.y+ yOffset),
                 fill: "transparent",
                 stroke: "red",
                 "stroke-width": "1"
-              });
             });
-          });
+        });
+    });
 
           if (items.length === 0){
              return null;

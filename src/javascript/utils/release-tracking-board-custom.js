@@ -221,13 +221,15 @@ Ext.define("CArABU.technicalservices.portfolioreleasetracking.Board", {
                     id: rec.getId()
                 });
                 featureHash[rec.get('FormattedID')] = m;
-                m.addItem(rec.getData());
+                var item = rec.getData();
+                item.__peerDependencies = rec.get('__peerDependencies');
+                m.addItem(item);
                 return m;
             }, this);
 
             if (showStories || showDependencies){
-                var dependencies = results[1];
-                var depModels = this._groupDependencies(dependencies, featureName, featureHash);
+                var childDependencies = results[1];
+                var depModels = this._groupDependencies(childDependencies, featureName, featureHash);
                 _.each(depModels, function(d){
                     if (featureHash[d.get('__childDependency')]){
                         featureHash[d.get('__childDependency')].addChildDependency(d.get('FormattedID'));
