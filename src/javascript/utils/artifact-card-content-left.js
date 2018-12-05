@@ -16,8 +16,7 @@ Ext.define('CArABU.technicalservices.plugin.TrackingCardContentLeft', {
                        '<div class="left-header">',
                         '<div class="id" style="min-width: {idWidth}px">{formattedId}</div>',
                            '<div class="dependency {dep} field-content dependency"></div>', //{depID}
-                           '<div class="itemstate {state}"></div>',
-                           '<div class="field-content ItemSummary">{summary}</div>',
+                           //'<div class="field-content ItemSummary">{summary}</div>',
                            '</span>',
                        '</div>']);
                }
@@ -39,11 +38,6 @@ Ext.define('CArABU.technicalservices.plugin.TrackingCardContentLeft', {
                  data.dep = "";
                  data.depID = "";
 
-               if (this.card.usePoints){
-                 data.summary = Ext.String.format("{0} / {1}", record.get('__acceptedPoints'), record.get('__totalPoints'));
-               } else {
-                 data.summary = Ext.String.format("{0} / {1}", record.get('__acceptedCount'), record.get('__totalCount'));
-               }
 
               if (groupedItem){
                 data.formattedId = "<div class='formatted-id-template'>" + record.getGroupName() + "</div>";
@@ -60,22 +54,6 @@ Ext.define('CArABU.technicalservices.plugin.TrackingCardContentLeft', {
                  var recordData = record.get('__items') && record.get('__items')[0];
                  if (childDeps){
                     data.dep = "type-indicator picto icon-predecessor";
-                 }
-
-                 //KMC - added logic to show status indicator for done states and at risk
-                 data.state = "";
-                 var status = record.getStatus();
-
-                 switch(status){
-                   case "done":
-                      data.state = "icon-ok done";
-                      break;
-                   case "atrisk":
-                    data.state = "icon-warning atrisk";
-                    break;
-                  case "willnotcomplete":
-                    data.state = "icon-minus willnotcomplete";
-                    break;
                  }
 
                  data.formattedId = Rally.ui.cardboard.plugin.CardContentLeft.getIdTpl().apply(recordData);

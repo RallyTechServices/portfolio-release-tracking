@@ -36,7 +36,8 @@
 
       var plugins = [
           {ptype: 'artifactcardpopover'},
-          {ptype: 'trackingcardcontentleft'}
+          {ptype: 'trackingcardcontentleft'},
+          {ptype: 'trackingcardcontentright'}
       ];
       return _.uniq(plugins, 'ptype');
   },
