@@ -39,6 +39,7 @@
 }
 .rui-card .rui-card-right-side {
     width: 50px;
+    text-align: right;
 }
 
 .itemstate {

@@ -3,13 +3,13 @@
 <head>
     <title>CATS-Portfolio Release Tracking Board-0.1</title>
     <!--  (c) 2017 CA Technologies.  All Rights Reserved. -->
-    <!--  Build Date: Tue Dec 04 2018 17:02:24 GMT-0800 (Pacific Standard Time) -->
+    <!--  Build Date: Tue Dec 04 2018 17:05:00 GMT-0800 (Pacific Standard Time) -->
 
     <script type="text/javascript">
-        var APP_BUILD_DATE = "Tue Dec 04 2018 17:02:24 GMT-0800 (Pacific Standard Time)";
+        var APP_BUILD_DATE = "Tue Dec 04 2018 17:05:00 GMT-0800 (Pacific Standard Time)";
         var ARTIFACT = "F529";
         var BUILDER  = "marjo60";
-        var CHECKSUM = 88414535762;
+        var CHECKSUM = 88490146623;
     </script>
 
     <script type="text/javascript" src="/apps/2.1/sdk.js"></script>
@@ -70,7 +70,8 @@
   background-color: white;
 }
 .rui-card .rui-card-right-side {
-    width: 50px
+    width: 50px;
+    text-align: right;
 }
 
 .itemstate {
