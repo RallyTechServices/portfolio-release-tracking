@@ -11,7 +11,7 @@ Ext.define("CArABU.technicalservices.app.PortfolioReleaseTrackingBoard", {
        defaultSettings: {
          usePoints: true,
          atRiskField: "c_PIFeatureRiskLevel",
-         doneStates: ["Deployed","Released to Customers"],
+         doneStates: ["Deployed to Production","Released to Customers"],
          atRiskValue: "At risk for PI",
          willNotCompleteValue: "Will not complete in PI"
        }
